@@ -9,15 +9,15 @@
         <h4 class="modal-title" id="myModalLabel">Why do we need your birthdate?</h4>
       </div>
       <div class="modal-body">
-        <p>Those over the age of 15 by the start of the convention (born on or before August 10, 2003) may register online, 
-           but only individuals 18 years or older (born on or before August 10, 2000) can pick up their own badges.</p>
-        <p>Individuals at least 15 years of age at the time of the event (born on or before August 10, 2003), must either:
+        <p>Those over the age of 15 by the start of the convention (born on or before August 10, 2004) may register online, 
+           but only individuals 18 years or older (born on or before August 10, 2001) can pick up their own badges.</p>
+        <p>Individuals at least 15 years of age at the time of the event (born on or before August 10, 2004), must either:
             <ul>
                 <li>Have a parent or legal guardian present at time of registration<br>&nbsp;<b>-or-</b>
                     <li>Bring <a href="https://www.furrydelphia.org/Furrydelphia_Parental_Consent_Form.pdf" target="_blank">this consent form</a>, completed by a parent or legal guardian, and notarized
             </ul>
         </p>
-        <p>A parent or guardian must also register for the convention to accompany anyone under the age of 15 at the time of the event (born after August 10, 2003).</p>
+        <p>A parent or guardian must also register for the convention to accompany anyone under the age of 15 at the time of the event (born after August 10, 2004).</p>
     <p>Please contact <a href="mailto:registration@reg.furrydelphia.org">registration@reg.furrydelphia.org</a> if you have any questions.</p>
       </div>
     </div>
@@ -27,7 +27,7 @@
     <form class="form-horizontal" role="form" data-toggle="validator">
     <div class="tab-content">
     <div role="tabpanel" class="tab-pane fade in active" id="personal">
-        <h1>Pre-Register for Furrydelphia 2018!</h1>
+        <h1>Pre-Register for Furrydelphia 2019!</h1>
         <p>Welcome to the registration system. To continue, enter your information below. Required fields are marked with a red asterisk (<span style="color:red;">*</span>).</p>
         <hr>
 
@@ -138,7 +138,7 @@
                     <div>
                         <label>
                             <input type="checkbox" id="agreeToRules" name="agreeToRules" class="form-control-checkbox" required>
-			I agree to abide by Furrydelphia's <a href="https://docs.google.com/document/d/e/2PACX-1vQwPV-toFZdjPJioZjlUGTWoLeC3kssVd8YRPGTKP99337JMCnQP94gpRWygr5dA9J9DITQE6ChdRWU/pub" target="_blank">Code of Conduct</a>.
+			    I agree to abide by Furrydelphia's <a href="https://docs.google.com/document/d/e/2PACX-1vQwPV-toFZdjPJioZjlUGTWoLeC3kssVd8YRPGTKP99337JMCnQP94gpRWygr5dA9J9DITQE6ChdRWU/pub" target="_blank">Code of Conduct</a> and have read and understand the <a href="https://docs.google.com/document/d/e/2PACX-1vQwPV-toFZdjPJioZjlUGTWoLeC3kssVd8YRPGTKP99337JMCnQP94gpRWygr5dA9J9DITQE6ChdRWU/pub#h.pnjcm6t7muoa" target="_blank">refund policy</a>.
                         </label>
                     </div>
 		    <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
@@ -410,10 +410,14 @@
         e.preventDefault();
         $("form").validator('validate');
         var errorCount = $(".has-error").length;
-        if (errorCount > 0) {return;}
+        if (errorCount > 0) {return false;}
         if ($("#birthDate").val() == "") {
             alert("You must enter your birthdate to submit your registration.");
-            return;
+            return false;
+        }
+	if (!document.getElementById("agreeToRules").checked) {
+            alert("You must agree to the code of conduct and refund policy before continuing.");
+            return false;
         }
         if (Modernizr.inputtypes.date) {
             // native datepicker - EXPECT iso date
@@ -424,8 +428,8 @@
         }
         var age = getAge(birthdate);
         if (age < 15) {
-            alert("You must be 15 by the first day of Furrydelphia to register online.")
-            return;
+            alert("You must be 15 by the first day of Furrydelphia to register online.");
+            return false;
         }
         var data = {
             'attendee': {
@@ -438,7 +442,7 @@
                 'asl': false,
             }, 
             'priceLevel': { 'id': $(".selectLevel")[0].id.split('_')[1], 'options': getOptions() },
-            'event': 'Furrydelphia 2018'
+            'event': 'Furrydelphia 2019'
         };
         $.ajax({
             "type": "POST",
@@ -457,7 +461,8 @@
                 }
             },
             "error": function(result, status) {
-                alert("An error has occurred. Please contact registration@furrydelphia.org and we will correct the problem.")
+                alert("An error has occurred. Please contact info@reg.furrydelphia.org and we will correct the problem.")
+	 	return false;
             }
         })
 

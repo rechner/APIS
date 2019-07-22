@@ -118,8 +118,8 @@ var paymentForm = new SqPaymentForm({
 
 		{% for item in orderItems %}
 			<div class="row">
-				<div class="col-sm-6 col-sm-offset-1">{{item.badge.attendee}} - {{item.priceLevel}}</div>
-				<div class="col-sm-2">${{item.priceLevel.basePrice}}</div>   
+				<div class="col-sm-6 col-sm-offset-1">{{item.badge.attendee}} - {{item.priceLevel|add:"-50"}}</div>
+				<div class="col-sm-2">${{item.priceLevel.basePrice|add:"-50"}}</div>   
 				<div class="col-sm-2">
 				</div>
 			</div>

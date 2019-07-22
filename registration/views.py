@@ -1,5 +1,6 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core import serializers
 from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import render, redirect
@@ -24,7 +25,7 @@ from .payments import chargePayment
 logger = logging.getLogger("django.request")
 
 def index(request):
-    event = Event.objects.get(name__icontains="2018")
+    event = Event.objects.get(name__icontains="2019")
     tz = timezone.get_current_timezone()
     today = tz.localize(datetime.now())
     context = {}
@@ -51,9 +52,8 @@ def doCheckout(billingData, total, discount, orderItems, donationOrg, donationCh
                   billingAddress1=billingData['address1'], billingAddress2=billingData['address2'],
                   billingCity=billingData['city'], billingState=billingData['state'], billingCountry=billingData['country'],
                   billingPostal=billingData['postal'], billingEmail=billingData['email'])
-    order.save()
 
-    status, response = chargePayment(order.id, billingData, ip)
+    status, response = chargePayment(order, billingData, ip)
 
     if status:
         for oitem in orderItems:
@@ -136,8 +136,8 @@ def getDealerTotal(orderItems, discount, dealer):
     subTotal = getTotal(orderItems, discount)
     partnerCount = dealer.getPartnerCount()
     partnerBreakfast = 0
-    if partnerCount > 0 and dealer.asstBreakfast:
-      partnerBreakfast = 60*partnerCount
+    #if partnerCount > 0 and dealer.asstBreakfast:
+    #  partnerBreakfast = 60*partnerCount
     wifi = 0
     power = 0
     if dealer.needWifi:
@@ -145,7 +145,7 @@ def getDealerTotal(orderItems, discount, dealer):
     if dealer.needPower:
         power = 15
     paidTotal = dealer.paidTotal()
-    total = subTotal + 35*partnerCount + partnerBreakfast + dealer.tableSize.basePrice + wifi + power - dealer.discount - paidTotal
+    total = subTotal + 35*partnerCount + partnerBreakfast + dealer.tableSize.basePrice + wifi + power - dealer.discount - paidTotal - 50
     if total < 0:
       return 0
     return total
@@ -449,7 +449,13 @@ def infoDealer(request):
             badge_dict = {}
         table_dict = model_to_dict(dealer.tableSize)
         if badge.effectiveLevel():
-            lvl_dict = model_to_dict(badge.effectiveLevel())
+            #lvl_dict = model_to_dict(badge.effectiveLevel())
+            #lvl_dict = serializers.serialize('json', badge.effectiveLevel())
+            level = badge.effectiveLevel()
+            lvl_dict = {
+                    'name' : level.name,
+                    'basePrice' : level.basePrice,
+            }
         else:
             lvl_dict = {}
         context = {'dealer': dealer, 'badge': badge,
@@ -552,7 +558,7 @@ def checkoutAsstDealer(request):
     partnerCount = dealer.getPartnerCount()
 
     partners = partnerCount - originalPartnerCount
-    total = Decimal(45*partners)
+    total = Decimal(35*partners)
     if pbill['breakfast']:
         total = total + Decimal(60*partners)
     ip = get_client_ip(request)
@@ -785,7 +791,7 @@ def addNewDealer(request):
 
 def onsite(request):
     # FIXME: need mechanism for getting the current event, not just the first row in the db
-    event = Event.objects.get(name__icontains="2018")
+    event = Event.objects.get(name__icontains="2019")
     tz = timezone.get_current_timezone()
     today = tz.localize(datetime.now())
     context = {}
@@ -1035,7 +1041,7 @@ def addToCart(request):
     banCheck = checkBanList(pda['firstName'], pda['lastName'], pda['email'])
     if banCheck:
         logger.exception("***ban list registration attempt***")
-        return JsonResponse({'success': False, 'message': "We are sorry, but you are unable to register for Furrydelphia 2018. If you have any questions, or would like further information or assistance, please contact Registration at reg@furrydelphia.org."})
+        return JsonResponse({'success': False, 'message': "We are sorry, but you are unable to register for Furrydelphia 2019. If you have any questions, or would like further information or assistance, please contact Registration at reg@furrydelphia.org."})
 
     tz = timezone.get_current_timezone()
     birthdate = tz.localize(datetime.strptime(pda['birthdate'], '%Y-%m-%d' ))
@@ -1167,7 +1173,8 @@ def checkout(request):
             return JsonResponse({'success': False, 'message': "Your payment succeeded but we may have been unable to send you a confirmation email. If you do not receive one within the next hour, please contact registration@furrydelphia.org to get your confirmation number."})
         return JsonResponse({'success': True})
     else:
-        order.delete()
+        del order
+        #order.delete()
         return JsonResponse({'success': False, 'message': message})
 
 
@@ -1187,11 +1194,11 @@ def basicBadges(request):
               'firstName': badge.attendee.firstName.lower(), 'lastName': badge.attendee.lastName.lower(),
               'printed': badge.printed, 'discount': badge.getDiscount(),
               'assoc': badge.abandoned(), 'orderItems': getOptionsDict(badge.orderitem_set.all()) }
-             for badge in badges if badge.effectiveLevel() != None and badge.event.name == "Furrydelphia 2018"]
+             for badge in badges if badge.effectiveLevel() != None and badge.event.name == "Furrydelphia 2019"]
 
     staffdata = [{'firstName': s.attendee.firstName.lower(), 'lastName':s.attendee.lastName.lower(),
                   'title': s.title, 'id': s.id}
-                for s in staff if s.event.name == "Furrydelphia 2018"]
+                for s in staff if s.event.name == "Furrydelphia 2019"]
 
     for staff in staffdata:
         sbadge = Staff.objects.get(id=staff['id']).getBadge()
@@ -1372,7 +1379,7 @@ def getShirtSizes(request):
 
 def getTableSizes(request):
     event = Event.objects.last()
-    sizes = TableSize.objects.filter(event=event)
+    sizes = TableSize.objects.filter(event=event).order_by('basePrice', 'name')
     data = [{'name': size.name, 'id': size.id, 'description': size.description, 'chairMin': size.chairMin, 'chairMax': size.chairMax, 'tableMin': size.tableMin, 'tableMax': size.tableMax, 'partnerMin': size.partnerMin, 'partnerMax': size.partnerMax, 'basePrice': str(size.basePrice)} for size in sizes]
     return HttpResponse(json.dumps(data), content_type='application/json')
 

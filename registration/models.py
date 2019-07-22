@@ -5,6 +5,7 @@ import string
 from decimal import *
 from django.db import models
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 
 
 #######################################
@@ -69,6 +70,10 @@ class Department(models.Model):
 def getRegistrationToken():
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase+string.digits) for _ in range(15))
 
+def getOrderReference():
+    return ''.join(random.SystemRandom().choice(string.ascii_uppercase+string.digits) for _ in range(6))
+
+@python_2_unicode_compatible
 class Attendee(models.Model):
     firstName = models.CharField(max_length=200)
     lastName = models.CharField(max_length=200)
@@ -275,10 +280,10 @@ class PriceLevelOption(models.Model):
         else:
             return []
     def getOptionImage(self):
-	if self.optionImage == None:
-		return None
-	else:
-		return self.optionImage.url
+        try:
+	    return self.optionImage.url
+        except ValueError:
+            return None
 
 class PriceLevel(models.Model):
     name = models.CharField(max_length=100)
@@ -318,17 +323,28 @@ class Discount(models.Model):
             return False
         return True
 
+
+def getReference():
+    reference = getOrderReference()
+    while Order.objects.filter(reference=reference).count() > 0:
+        reference = getOrderReference()
+
+@python_2_unicode_compatible
 class Order(models.Model):
     CREDIT = 'Credit'
     CASH = 'Cash'
     COMP = 'Comp'
     BILLING_TYPE_CHOICES = ((CREDIT, 'Credit'), (CASH, 'Cash'), (COMP, 'Comp'))
+    PENDING = 'Pending'
+    COMPLETE = 'Complete'
+    PAID = 'Paid'
+    STATUS_CHOICES = ((PENDING, 'Pending'), (COMPLETE, 'Complete'), (PAID, 'Paid'))
     total = models.DecimalField(max_digits=8, decimal_places=2)
-    status = models.CharField(max_length=50, default='Pending')
-    reference = models.CharField(max_length=50)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default=PENDING)
+    reference = models.CharField(max_length=50, default=getReference, blank=True)
     createdDate = models.DateTimeField(auto_now_add=True, null=True)
     settledDate = models.DateTimeField(auto_now_add=True, null=True)
-    discount = models.ForeignKey(Discount, null=True, on_delete=models.SET_NULL)
+    discount = models.ForeignKey(Discount, null=True, on_delete=models.SET_NULL, blank=True)
     orgDonation = models.DecimalField(max_digits=8, decimal_places=2, null=True, default=0)
     charityDonation = models.DecimalField(max_digits=8, decimal_places=2, null=True, default=0)
     notes = models.TextField(blank=True)
@@ -350,9 +366,10 @@ class Order(models.Model):
             self.status,
             self.reference)
 
+
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, null=True)
-    badge = models.ForeignKey(Badge, null=True)
+    order = models.ForeignKey(Order, null=True, blank=True)
+    badge = models.ForeignKey(Badge, null=True, blank=True)
     priceLevel = models.ForeignKey(PriceLevel)
     enteredBy = models.CharField(max_length=100)
     enteredDate = models.DateTimeField(auto_now_add=True, null=True)

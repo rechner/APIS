@@ -13,6 +13,8 @@ from squareconnect.rest import ApiException
 from squareconnect.apis.transactions_api import TransactionsApi
 from squareconnect.apis.locations_api import LocationsApi
 
+from urllib3.exceptions import ReadTimeoutError
+
 squareconnect.configuration.access_token = settings.SQUARE_ACCESS_TOKEN
 
 logger = logging.getLogger("django.request")
@@ -20,57 +22,53 @@ logger = logging.getLogger("django.request")
 # Returns two variabies:
 #    True/False  - general success flag
 #    message - type of failure.
-def chargePayment(orderId, ccData, ipAddress):
-  try:
-    order = Order.objects.get(id=orderId)
-    idempotency_key = str(uuid.uuid1())
-    convertedTotal = int(order.total*100)
-
-    amount = {'amount': convertedTotal, 'currency': settings.SQUARE_CURRENCY}
-
-    billing_address = {'address_line_1': ccData["address1"], 'address_line_2': ccData["address2"],
-                       'locality': ccData["city"], 'administrative_district_level_1': ccData["state"],
-                       'postal_code': ccData["postal"], 'country': ccData["country"],
-                       'buyer_email_address': ccData["email"],
-                       'first_name': ccData["cc_firstname"], 'last_name': ccData["cc_lastname"]}
-
-    body = {'idempotency_key': idempotency_key, 'card_nonce': ccData["nonce"], 'amount_money': amount,
-            'reference_id': order.reference, 'billing_address': billing_address}
-
-    print("---- Begin Transaction ----")
-    print(body)
-
-    api_instance = TransactionsApi()
-    api_response = api_instance.charge(settings.SQUARE_LOCATION_ID, body)
-
-    print("---- Charge Submitted ----")
-    print(api_response)
-
+def chargePayment(order, ccData, ipAddress):
     try:
-        order.lastFour = api_response['transaction']['tenders']['card_details']['last_4']
-        order.notes = order.notes + "Square: #" + api_response['transaction']['tenders']['id'][:4]
-    except Exception as e:
-        print(dir(e))
-        print(e)
-    order.save()
+        idempotency_key = str(uuid.uuid1())
+        convertedTotal = int(order.total*100)
 
-    if api_response.errors and len(api_response.errors) > 0:
-        message = api_response.errors[0].details
+        amount = {'amount': convertedTotal, 'currency': settings.SQUARE_CURRENCY}
+
+        billing_address = {'address_line_1': ccData["address1"], 'address_line_2': ccData["address2"],
+                           'locality': ccData["city"], 'administrative_district_level_1': ccData["state"],
+                           'postal_code': ccData["postal"], 'country': ccData["country"],
+                           'buyer_email_address': ccData["email"],
+                           'first_name': ccData["cc_firstname"], 'last_name': ccData["cc_lastname"]}
+
+        body = {'idempotency_key': idempotency_key, 'card_nonce': ccData["nonce"], 'amount_money': amount,
+                'reference_id': order.reference, 'billing_address': billing_address}
+
+        print("---- Begin Transaction ----")
+        print(body)
+
+        api_instance = TransactionsApi()
+        api_response = api_instance.charge(settings.SQUARE_LOCATION_ID, body)
+
+        print("---- Charge Submitted ----")
+        print(api_response)
+
+        order.lastFour = api_response.transaction.tenders[0].card_details.card.last_4
+        order.notes = order.notes + "Square: #" + api_response.transaction.id
+        order.save()
+
+        if api_response.errors and len(api_response.errors) > 0:
+            message = api_response.errors[0].details
+            print("---- Transaction Failed ----")
+            return False, message
+
+        print("---- End Transaction ----")
+
+        return True, ""
+    except ApiException as e:
         print("---- Transaction Failed ----")
-        return False, message
-
-
-
-    print("---- End Transaction ----")
-
-    return True, ""
-  except ApiException as e:
-    print("---- Transaction Failed ----")
-    print e
-    print("---- End Transaction ----")
-    logger.exception("!!Failed Square Transaction!!")
-    return False, "An unexpected error has occurred."
-
+        print e
+        print("---- End Transaction ----")
+        logger.exception("!!Failed Square Transaction!!")
+        return False, "An unexpected error has occurred."
+    except ReadTimeoutError as e:
+        logger.error("Timeout during Square Transaction")
+        logger.exception(e)
+        return False, "A timeout occurred while contacting our payment processor. Please try again later."
 
 
 def cardType(number):

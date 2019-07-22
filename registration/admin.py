@@ -16,8 +16,11 @@ from nested_inline.admin import NestedTabularInline, NestedModelAdmin
 from django.contrib.admin.models import LogEntry, DELETION
 from django.utils.html import escape
 
+from django_extensions.admin import ForeignKeyAutocompleteAdmin
+
 from .models import *
 from .emails import *
+import models
 import views
 import printing
 
@@ -474,14 +477,16 @@ class BadgeResource(resources.ModelResource):
         model = Badge
         fields = ('id', 'event__name', 'badge_level', 'attendee__firstName', 'attendee__lastName', 'attendee__address1',
                   'attendee__address2', 'attendee__city', 'attendee__state', 'attendee__country',
-                  'attendee__postalCode', 'attendee__phone', 'attendee__email', 'badgeName', 'badgeNumber', 'attendee__aslRequest'
+                  'attendee__postalCode', 'attendee__phone', 'attendee__email', 'badgeName', 'badgeNumber', 'attendee__aslRequest',
+		  'registeredDate'
                   )
         export_order = ('id', 'event__name', 'badge_level', 'attendee__firstName', 'attendee__lastName', 'attendee__address1',
                   'attendee__address2', 'attendee__city', 'attendee__state', 'attendee__country',
-                  'attendee__postalCode', 'attendee__phone', 'attendee__email', 'badgeName', 'badgeNumber', 'attendee__aslRequest'
+                  'attendee__postalCode', 'attendee__phone', 'attendee__email', 'badgeName', 'badgeNumber', 'attendee__aslRequest',
+		  'registeredDate'
                   )
 
-class BadgeAdmin(NestedModelAdmin, ImportExportModelAdmin):
+class BadgeAdmin(NestedModelAdmin, ImportExportModelAdmin, ForeignKeyAutocompleteAdmin):
     inlines = [OrderItemInline]
     resource_class = BadgeResource
     save_on_top = True
@@ -491,6 +496,11 @@ class BadgeAdmin(NestedModelAdmin, ImportExportModelAdmin):
     readonly_fields = ['get_age_range', ]
     actions = [assign_badge_numbers, print_badges, print_dealerasst_badges, assign_numbers_and_print,
                print_dealer_badges, assign_staff_badge_numbers, print_staff_badges, send_upgrade_form_email]
+
+    related_search_fields = {
+            'attendee' : ('firstName', 'lastName', 'email')
+    }
+
     fieldsets = (
         (
 	    None,
@@ -516,7 +526,7 @@ class BadgeAdmin(NestedModelAdmin, ImportExportModelAdmin):
 
 admin.site.register(Badge, BadgeAdmin)
 
-class AttendeeAdmin(NestedModelAdmin):
+class AttendeeAdmin(NestedModelAdmin, ForeignKeyAutocompleteAdmin):
     inlines = [BadgeInline]
     save_on_top = True
     actions = [make_staff]
@@ -591,6 +601,11 @@ class OrderAdmin(NestedModelAdmin):
             ), 'classes': ('collapse',)}
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        if form.cleaned_data['reference'] == "":
+            obj.reference = models.getOrderReference()
+        super(OrderAdmin, self).save_model(request, obj, form, change)
 
 
 admin.site.register(Order, OrderAdmin)
