@@ -1,4 +1,5 @@
+{% load site %}
 
 Please use the link below to add additional assistants to your paid dealer registration. 
 
-https://www.furrydelphia.org/apis/registration/dealerassistant/{{dealer.registrationToken}}
+https://{% current_domain %}{% url 'dealers' guid=dealer.registrationToken %}

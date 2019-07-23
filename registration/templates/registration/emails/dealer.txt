@@ -1,7 +1,7 @@
-Thank you for your application to be a dealer at Furrydelphia 2019.
+Thank you for your application to be a dealer at {{ event }}.
 
-The cut off date for primary applicants will be April 20th at 11:59pm, and selections will be made at that time. 
-If you have any questions, please feel free to contact us: marketplace@reg.furrydelphia.org
+The cut off date for primary applicants will be {{ event.dealerRegEnd|date:'I, F jS, Y H:i' }}, and selections will be made at that time. 
+If you have any questions, please feel free to contact us: {{ event.dealerEmail }}
 If you have listed any assistants, they will receive an email with instructions about how to register after your payment has been received.
 This year we have a special room block only for our dealers! This is to ensure that all our dealers are guaranteed a room in the con hotel, even if the attendee room block fills up before acceptance notices are sent out.
 Please note, this block will ONLY be for accepted dealers. If you intend to come to Furrydelphia regardless of whether or not you are accepted, you are encouraged to book a room immediately in the attendee block. That can be done at https://furrydelphia.org/hotel.

@@ -1,0 +1,20 @@
+{% extends "registration/master.html" %}
+
+{% block content %}
+	<div class="tab-content">
+	<div role="tabpanel" class="tab-pane fade in active" id="personal">
+		<h1>Dealer Registration - {{event}}</h1>
+		<h3>Thank you for your Marketplace Application!</h3>
+		<hr>
+		<p>The cut off date for primary applicants will be {{ event.dealerRegEnd|date:'I, F jS, Y H:i' }}, and selections will be made/notifications sent shortly after. </p>
+		<p>If you have not received an acceptance notification by that date, you will be placed on the waitlist for the next available spot. If you have any questions, please feel free to contact us: <a href="mailto:{{ event.dealerEmail }}">{{ event.dealerEmail }}</a></p>
+		<p>If you have listed any partners, they will receive an email with instructions about how to register after your payment has been received.</p>
+		<p>This year we have a special room block only for our dealers! This is to ensure that all our dealers are guaranteed a room in the con hotel, even if the attendee room block fills up before acceptance notices are sent out. 
+		<p>Please note, this block will ONLY be for accepted dealers. If you intend to come to Furrydelphia regardless of whether or not you are accepted, you are encouraged to book a room immediately in the attendee block. That can be done at <a href="https://furrydelphia.org/hotel">https://furrydelphia.org/hotel</a>.
+		<p>Additionally, we have included a small survey to help us determine the Marketplace schedule - be sure to leave your feedback regarding opening times to make your thoughts on this known!
+		<p>Thank you!</p>
+		<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc_IIPWsrKpUyB6WXn4Tei1pcPKgN1kzIPdJrqHxemsYi7GLQ/viewform" style="width: 100%; height: 1300px"></iframe>
+		<p style='float:right;'><a href='/'>Back to Main Page</a></p>
+	</div>
+	</div>
+{% endblock %}

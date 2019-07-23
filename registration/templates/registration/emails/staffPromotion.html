@@ -1,2 +1,3 @@
-<h3>Welcome to Furrydelphia staff!</h3>
-<p>Use this link to register as staff: <a href='https://www.furrydelphia.org/apis/registration/staff/{{registrationToken}}'>https://www.furrydelphia.org/apis/registration/staff/{{registrationToken}}</a></p>
+{% load site %}
+<h3>Welcome to {{event}} staff!</h3>
+<p>Use this link to register as staff: <a href='https://{% current_domain %}{% url 'staff' guid=registrationToken %}'>https://{% current_domain %}{% url 'staff' guid=registrationToken %}</a></p>
