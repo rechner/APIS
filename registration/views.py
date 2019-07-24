@@ -24,14 +24,18 @@ import os
 import json
 import random
 import string
+import sys
 import logging
 
 from .models import *
 from .payments import chargePayment
 from .pushy import PushyAPI
-from .emails import *
-from .printing import Main as printing_main
-
+if sys.version_info[0] == 2:
+    import emails
+    import printing
+else:
+    from . import emails
+    from . import printing
 # Create your views here.
 logger = logging.getLogger("django.request")
 
@@ -41,8 +45,7 @@ def index(request):
     except Event.DoesNotExist:
         return render(request, 'registration/docs/no-event.html')
 
-    tz = timezone.get_current_timezone()
-    today = tz.localize(datetime.now())
+    today = timezone.now()
     context = { 'event' : event }
     if event.attendeeRegStart <= today <= event.attendeeRegEnd:
         return render(request, 'registration/registration-form.html', context)
@@ -255,7 +258,7 @@ def getDealerTotal(orderItems, discount, dealer):
     if discount:
         itemSubTotal = getDiscountTotal(discount, itemSubTotal)
     # FD
-    total = subTotal + 35*partnerCount + partnerBreakfast + dealer.tableSize.basePrice + wifi + power - dealer.discount - paidTotal - 50
+    total = itemSubTotal + 35*partnerCount + partnerBreakfast + dealer.tableSize.basePrice + wifi + power - dealer.discount - paidTotal - 50
     # FM
     #total = itemSubTotal + 45*partnerCount + partnerBreakfast + dealer.tableSize.basePrice + wifi + power - dealer.discount - paidTotal
     if total < 0:
@@ -268,7 +271,7 @@ def applyDiscount(request):
         return JsonResponse({'success': False, 'message': 'Only one discount is allowed per order.'})
 
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for applyDiscount()")
         return JsonResponse({'success': False})
@@ -295,7 +298,7 @@ def newStaff(request, guid):
 
 def findNewStaff(request):
   try:
-    postData = json.loads(request.body)
+    postData = json.loads(request.body.decode('utf-8'))
     email = postData['email']
     token = postData['token']
 
@@ -312,7 +315,7 @@ def findNewStaff(request):
 
     return JsonResponse({'success': True, 'message':'STAFF'})
   except Exception as e:
-    logger.exception("Unable to find staff." + request.body)
+    logger.exception("Unable to find staff." + request.body.decode('utf-8'))
     return HttpResponseServerError(str(e))
 
 def infoNewStaff(request):
@@ -326,7 +329,7 @@ def infoNewStaff(request):
     return render(request, 'registration/staff/staff-new-payment.html', context)
 
 def addNewStaff(request):
-    postData = json.loads(request.body)
+    postData = json.loads(request.body.decode('utf-8'))
     #create attendee from request post
     pda = postData['attendee']
     pds = postData['staff']
@@ -408,7 +411,7 @@ def staffDone(request):
 
 def findStaff(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
         email = postData['email']
         token = postData['token']
 
@@ -419,7 +422,7 @@ def findStaff(request):
         request.session['staff_id'] = staff.id
         return JsonResponse({'success': True, 'message':'STAFF'})
     except Exception as e:
-        logger.warning("Unable to find staff. " + request.body)
+        logger.warning("Unable to find staff. " + request.body.decode('utf-8'))
         return HttpResponseServerError(str(e))
 
 
@@ -449,7 +452,7 @@ def infoStaff(request):
 
 def addStaff(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for addStaff()")
         return JsonResponse({'success': False})
@@ -559,7 +562,7 @@ def checkoutStaff(request):
     staffId = request.session['staff_id']
     orderItems = list(OrderItem.objects.filter(id__in=sessionItems))
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for checkoutStaff()")
         return JsonResponse({'success': False})
@@ -647,8 +650,7 @@ def doneAsstDealer(request):
 
 def newDealer(request):
     event = Event.objects.get(default=True)
-    tz = timezone.get_current_timezone()
-    today = tz.localize(datetime.now())
+    today = timezone.now()
     context = {'event': event}
     if event.dealerRegStart <= today <= event.dealerRegEnd:
         return render(request, 'registration/dealer/dealer-form.html', context)
@@ -682,7 +684,7 @@ def infoDealer(request):
 
 def findDealer(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
         email = postData['email']
         token = postData['token']
 
@@ -698,7 +700,7 @@ def findDealer(request):
 
 def findAsstDealer(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
         email = postData['email']
         token = postData['token']
 
@@ -755,7 +757,7 @@ def addAsstDealer(request):
 
 def checkoutAsstDealer(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for checkoutAsstDealer()")
         return JsonResponse({'success': False})
@@ -809,7 +811,7 @@ def checkoutAsstDealer(request):
 
 def addDealer(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for addStaff()")
         return JsonResponse({'success': False})
@@ -913,7 +915,7 @@ def checkoutDealer(request):
 
         dealer = Dealer.objects.get(id=request.session.get('dealer_id'))
         try:
-            postData = json.loads(request.body)
+            postData = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
             logger.error("Unable to decode JSON for checkoutDealer()")
             return JsonResponse({'success': False})
@@ -956,7 +958,7 @@ def checkoutDealer(request):
                 dealer.resetToken()
                 sendDealerPaymentEmail(dealer, order)
             except Exception as e:
-                logger.exception("Error sending DealerPaymentEmail. " + request.body)
+                logger.exception("Error sending DealerPaymentEmail. " + request.body.decode('utf-8'))
                 dealerEmail = getDealerEmail()
                 return JsonResponse({'success': False, 'message': "Your registration succeeded but we may have been unable to send you a confirmation email. If you have any questions, please contact {0}".format(dealerEmail)})
             return JsonResponse({'success': True})
@@ -969,7 +971,7 @@ def checkoutDealer(request):
 
 def addNewDealer(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for addNewDealer()")
         return JsonResponse({'success': False})
@@ -1019,7 +1021,7 @@ def addNewDealer(request):
         return JsonResponse({'success': True})
 
     except Exception as e:
-        logger.exception("Error in dealer addition." + request.body)
+        logger.exception("Error in dealer addition." + request.body.decode('utf-8'))
         return HttpResponseServerError(str(e))
 
 ###################################
@@ -1027,8 +1029,7 @@ def addNewDealer(request):
 
 def onsite(request):
     event = Event.objects.get(default=True)
-    tz = timezone.get_current_timezone()
-    today = tz.localize(datetime.now())
+    timezone.now()
     context = {}
     if event.onlineRegStart <= today <= event.onlineRegEnd:
         return render(request, 'registration/onsite.html', context)
@@ -1412,7 +1413,7 @@ def get_attendee_age(attendee):
 @staff_member_required
 def onsitePrintBadges(request):
     badge_list = request.GET.getlist('id')
-    con = printing_main(local=True)
+    con = printing.Main(local=True)
     tags = []
     theme = ""
 
@@ -1482,7 +1483,7 @@ def upgrade(request, guid):
 
 def infoUpgrade(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for infoUpgrade()")
         return JsonResponse({'success': False})
@@ -1536,7 +1537,7 @@ def findUpgrade(request):
 
 def addUpgrade(request):
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for addUpgrade()")
         return JsonResponse({'success': False})
@@ -1613,7 +1614,7 @@ def checkoutUpgrade(request):
 
     attendee = Attendee.objects.get(id=request.session.get('attendee_id'))
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for checkoutUpgrade()")
         return JsonResponse({'success': False})
@@ -1804,7 +1805,7 @@ def saveCart(cart):
                 attendeeOption = AttendeeOptions(option=plOption, orderItem=orderItem, optionValue=option['value'])
         attendeeOption.save()
 
-    cart.transferedDate = datetime.now()
+    cart.transferedDate = timezone.now()
     cart.save()
 
     return orderItem
@@ -1814,7 +1815,7 @@ def addToCart(request):
     Create attendee from request post.
     """
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         return abort(400, "Unable to decode JSON body")
 
@@ -1848,7 +1849,7 @@ def removeFromCart(request):
     deleted = False
     order = request.session.get('order_items', [])
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         return abort(400, 'Unable to decode JSON parameters')
     if 'id' not in postData.keys():
@@ -1894,7 +1895,7 @@ def clear_session(request):
     Soft-clears session by removing any non-protected session values.
     (anything prefixed with '_'; keeps Django user logged-in)
     """
-    for key in request.session.keys():
+    for key in list(request.session.keys()):
         if key[0] != '_':
             del request.session[key]
 
@@ -1910,7 +1911,7 @@ def checkout(request):
         abort(400, "Session expired or no session is stored for this client")
 
     try:
-        postData = json.loads(request.body)
+        postData = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
         logger.error("Unable to decode JSON for checkout()")
         return abort(400, 'Unable to parse input options')
@@ -1933,7 +1934,7 @@ def checkout(request):
 
         request.session.flush()
         try:
-            sendRegistrationEmail(order, order.billingEmail)
+            emails.sendRegistrationEmail(order, order.billingEmail)
         except Exception as e:
             logger.error("Error sending RegistrationEmail - zero sum.")
             logger.exception(e)
@@ -1998,7 +1999,7 @@ def checkout(request):
         cartItems.delete()
         clear_session(request)
         try:
-            sendRegistrationEmail(order, order.billingEmail)
+            emails.sendRegistrationEmail(order, order.billingEmail)
         except Exception as e:
             event = Event.objects.get(default=True)
             registrationEmail = getRegistrationEmail(event)
@@ -2321,7 +2322,7 @@ def completeSquareTransaction(request):
     for order in orders:
         order.billingType = Order.CREDIT
         order.status = "Complete"
-        order.settledDate = datetime.now()
+        order.settledDate = timezone.now()
         order.notes = json.dumps({
             'type' : 'square',
             'clientTransactionId' : clientTransactionId,
@@ -2346,7 +2347,7 @@ def completeCashTransaction(request):
 
     order.billingType = Order.CASH
     order.status = "Complete"
-    order.settledDate = datetime.now()
+    order.settledDate = timezone.now()
     order.notes = json.dumps({
         'type'     : 'cash',
         'tendered' : tendered
@@ -2459,7 +2460,7 @@ def handler(obj):
     elif isinstance(obj, Decimal):
         return str(obj)
     else:
-        raise TypeError('Object of type %s with value of %s is not JSON serializable' % (type(obj), repr(obj)))
+        raise TypeError('Object of type {!s} with value of {!r} is not JSON serializable'.format(type(obj), obj))
 
 def getRegistrationEmail(event=None):
     """

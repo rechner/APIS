@@ -450,7 +450,7 @@ class DealerAsst(models.Model):
             return []
     def getOptionImage(self):
         try:
-	    return self.optionImage.url
+            return self.optionImage.url
         except ValueError:
             return None
 

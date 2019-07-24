@@ -17,6 +17,8 @@ cache:
 
 python:
   - 2.7
+  - 3.6
+
 env:
   - DJANGO_PACKAGE="Django>=1.11,<1.12"
 

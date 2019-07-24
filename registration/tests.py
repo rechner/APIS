@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse_lazy
 from django.test.utils import override_settings
 from django.test import TestCase, Client
 from django.conf import settings
 from unittest import skip
 import logging
+import json
 
 from .models import *
 
@@ -39,17 +40,17 @@ class Index(TestCase):
    
     # unit tests skip methods that start with uppercase letters
     def TestIndex(self):
-        response = self.client.get(reverse('index'))
+        response = self.client.get(reverse_lazy('index'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Welcome to the registration system')
    
     def TestIndexClosed(self):
-        response = self.client.get(reverse('index'))
+        response = self.client.get(reverse_lazy('index'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'is closed. If you have any')
 
     def TestIndexNoEvent(self):
-        response = self.client.get(reverse('index'))
+        response = self.client.get(reverse_lazy('index'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'no default event was found')
 
@@ -143,7 +144,7 @@ class OrdersTestCases(TestCase):
         self.client = Client()
 
     def test_get_prices(self):
-        response = self.client.get(reverse('pricelevels'))
+        response = self.client.get(reverse_lazy('pricelevels'))
         self.assertEqual(response.status_code, 200)
         result = response.json()
         self.assertEqual(result.__len__(), 3)
@@ -155,7 +156,7 @@ class OrdersTestCases(TestCase):
         self.assertEqual(minor.__len__(), 1)
 
     def test_get_adult_prices(self):
-        response = self.client.get(reverse('adultpricelevels'))
+        response = self.client.get(reverse_lazy('adultpricelevels'))
         self.assertEqual(response.status_code, 200)
         result = response.json()
         self.assertEqual(result.__len__(), 2)
@@ -175,7 +176,7 @@ class OrdersTestCases(TestCase):
         options = [{'id': self.option_conbook.id, 'value': "true"}, {'id': self.option_shirt.id, 'value': self.shirt1.id}]
         self.add_to_cart(self.attendee_regular_2, self.price_45, options)
 
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -221,7 +222,7 @@ class OrdersTestCases(TestCase):
         message = result.json()
         error_codes = [ err['code'] for err in message['reason']['errors'] ]
         logger.error(error_codes)
-        self.assertTrue(error in error_codes)
+        self.assertIn(error, error_codes)
 
         # Ensure a badge wasn't created
         self.assertEqual(Attendee.objects.filter(firstName='Bea').count(), 0) 
@@ -248,13 +249,13 @@ class OrdersTestCases(TestCase):
                          'options': options},
                     'event': self.event.name}
 
-        response = self.client.post(reverse('addToCart'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('addToCart'), json.dumps(postData), content_type="application/json")
         logging.info(response.content)
         self.assertEqual(response.status_code, 200)
 
     def zero_checkout(self):
         postData = {}
-        response = self.client.post(reverse('checkout'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('checkout'), json.dumps(postData), content_type="application/json")
         return response
 
     def checkout(self, nonce, orgDonation='', charityDonation=''):
@@ -279,7 +280,7 @@ class OrdersTestCases(TestCase):
          'onsite': False,
          'orgDonation': orgDonation}
 
-        response = self.client.post(reverse('checkout'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('checkout'), json.dumps(postData), content_type="application/json")
 
         return response
 
@@ -288,16 +289,16 @@ class OrdersTestCases(TestCase):
 
         self.add_to_cart(self.attendee_regular_1, self.price_45, options)
 
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
         total = response.context["total"]
         self.assertEqual(total, 45)
 
-        response = self.client.get(reverse('cancelOrder'))
+        response = self.client.get(reverse_lazy('cancelOrder'))
         self.assertEqual(response.status_code, 200)
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 0)
@@ -308,7 +309,7 @@ class OrdersTestCases(TestCase):
     def test_vip_checkout(self):
         self.add_to_cart(self.attendee_regular_2, self.price_675, [])
 
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -337,7 +338,7 @@ class OrdersTestCases(TestCase):
         options = [{'id': self.option_conbook.id, 'value': "true"}, {'id': self.option_shirt.id, 'value': self.shirt1.id}]
         self.add_to_cart(self.attendee_regular_2, self.price_45, options)
 
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -345,9 +346,9 @@ class OrdersTestCases(TestCase):
         self.assertEqual(total, 45)
 
         postData = {'discount': 'OneTime'}
-        response = self.client.post(reverse('discount'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('discount'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -361,21 +362,21 @@ class OrdersTestCases(TestCase):
         self.assertEqual(discount.used, 1)
 
         postData = {'discount': 'OneTime'}
-        response = self.client.post(reverse('discount'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('discount'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, '{"message": "That discount is not valid.", "success": false}')
+        self.assertEqual(json.loads(response.content.decode('utf-8')), {"message": "That discount is not valid.", "success": False})
 
         postData = {'discount': 'Bogus'}
-        response = self.client.post(reverse('discount'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('discount'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, '{"message": "That discount is not valid.", "success": false}')
+        self.assertEqual(json.loads(response.content.decode('utf-8')), {"message": "That discount is not valid.", "success": False})
 
 
     def test_discount_zero_sum(self):
         options = [{'id': self.option_conbook.id, 'value': "true"}]
         self.add_to_cart(self.attendee_regular_2, self.price_45, options)
 
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -383,9 +384,9 @@ class OrdersTestCases(TestCase):
         self.assertEqual(total, 45)
 
         postData = {'discount': 'StaffDiscount'}
-        response = self.client.post(reverse('discount'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('discount'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -427,15 +428,15 @@ class OrdersTestCases(TestCase):
 
         # Failed lookup
         postData = {'email': 'nottherightemail@somewhere.com', 'token':staff.registrationToken}
-        response = self.client.post(reverse('findStaff'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('findStaff'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.content, 'Staff matching query does not exist.')
+        self.assertEqual(response.content.decode('utf-8'), u'Staff matching query does not exist.')
 
         # Regular staff reg
         postData = {'email':attendee.email, 'token':staff.registrationToken}
-        response = self.client.post(reverse('findStaff'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('findStaff'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, '{"message": "STAFF", "success": true}')
+        self.assertEqual(json.loads(response.content.decode('utf-8')), {"message": "STAFF", "success": True})
 
         postData = {'attendee': {'id': attendee.id,'firstName': "Staffer", 'lastName': "Testerson",
                                  'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -451,9 +452,9 @@ class OrdersTestCases(TestCase):
                     'priceLevel': {'id': self.price_150.id, 'options': [{'id': self.option_100_int.id, 'value': 1}, {'id': self.option_shirt.id, 'value': self.shirt1.id}]},
                     'event': self.event.name
                     }
-        response = self.client.post(reverse('addStaff'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('addStaff'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -477,14 +478,14 @@ class OrdersTestCases(TestCase):
         self.assertEqual(order.charityDonation, 0)
         self.assertEqual(order.discount.used, discountUsed+1)
 
-        response = self.client.get(reverse('flush'))
+        response = self.client.get(reverse_lazy('flush'))
         self.assertEqual(response.status_code, 200)
 
         # Staff zero-sum
         postData = {'email':attendee2.email, 'token':staff2.registrationToken}
-        response = self.client.post(reverse('findStaff'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('findStaff'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, '{"message": "STAFF", "success": true}')
+        self.assertEqual(json.loads(response.content.decode('utf-8')), {"message": "STAFF", "success": True})
 
         postData = {'attendee': {'id': attendee2.id,'firstName': "Staffer", 'lastName': "Testerson",
                                  'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -500,10 +501,10 @@ class OrdersTestCases(TestCase):
                     'priceLevel': {'id': self.price_45.id, 'options': [{'id': self.option_conbook.id, 'value': "true"}, {'id': self.option_shirt.id, 'value': self.shirt1.id}]},
                     'event': self.event.name
                     }
-        response = self.client.post(reverse('addStaff'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('addStaff'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.get(reverse('cart'))
+        response = self.client.get(reverse_lazy('cart'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -524,7 +525,7 @@ class OrdersTestCases(TestCase):
         self.assertEqual(order.total, 0)
         self.assertEqual(order.discount.used, discountUsed+1)
 
-        response = self.client.get(reverse('flush'))
+        response = self.client.get(reverse_lazy('flush'))
         self.assertEqual(response.status_code, 200)
 
 
@@ -544,7 +545,7 @@ class OrdersTestCases(TestCase):
                         'buttonOffer': "Buttons", 'asstbreakfast': False},
                     'event': self.event.name}
 
-        response = self.client.post(reverse('addNewDealer'), json.dumps(dealer_pay), content_type="application/json")
+        response = self.client.post(reverse_lazy('addNewDealer'), json.dumps(dealer_pay), content_type="application/json")
         self.assertEqual(response.status_code, 200)
         dealer_free = {'attendee': {'firstName': "Free", 'lastName': "Testerson",
                                  'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -561,7 +562,7 @@ class OrdersTestCases(TestCase):
                     'buttonOffer': "Buttons", 'asstbreakfast': False},
                 'event': self.event.name}
 
-        response = self.client.post(reverse('addNewDealer'), json.dumps(dealer_free), content_type="application/json")
+        response = self.client.post(reverse_lazy('addNewDealer'), json.dumps(dealer_free), content_type="application/json")
         self.assertEqual(response.status_code, 200)
         dealer_partners = {'attendee': {'firstName': "Dealz", 'lastName': "Testerson",
                                  'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -580,7 +581,7 @@ class OrdersTestCases(TestCase):
                     'buttonOffer': "Buttons", 'asstbreakfast': False},
                 'event': self.event.name}
 
-        response = self.client.post(reverse('addNewDealer'), json.dumps(dealer_partners), content_type="application/json")
+        response = self.client.post(reverse_lazy('addNewDealer'), json.dumps(dealer_partners), content_type="application/json")
         self.assertEqual(response.status_code, 200)
 
         attendee = Attendee.objects.get(firstName='Dealer')
@@ -605,7 +606,7 @@ class OrdersTestCases(TestCase):
         dealer = Dealer.objects.get(attendee=attendee)
         self.assertNotEqual(dealer, None)
 
-        response = self.client.get(reverse('flush'))
+        response = self.client.get(reverse_lazy('flush'))
         self.assertEqual(response.status_code, 200)
 
         #Dealer
@@ -613,18 +614,16 @@ class OrdersTestCases(TestCase):
         badge = Badge.objects.get(attendee=attendee, event=self.event)
         dealer = Dealer.objects.get(attendee=attendee)
         postData = {'token': dealer.registrationToken, 'email': attendee.email}
-        response = self.client.post(reverse('findDealer'), json.dumps(postData), content_type="application/json")
+        response = self.client.post(reverse_lazy('findDealer'), json.dumps(postData), content_type="application/json")
         self.assertEqual(response.status_code, 200)
 
         dealer_pay['attendee']['id'] = attendee.id
         dealer_pay['dealer']['id'] = dealer.id
         dealer_pay['priceLevel'] = {'id': self.price_45.id, 'options': []}
 
-        print self.event.dealerDiscount
-
-        response = self.client.post(reverse('addDealer'), json.dumps(dealer_pay), content_type="application/json")
+        response = self.client.post(reverse_lazy('addDealer'), json.dumps(dealer_pay), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        response = self.client.get(reverse('invoiceDealer'))
+        response = self.client.get(reverse_lazy('invoiceDealer'))
         self.assertEqual(response.status_code, 200)
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 1)
@@ -633,7 +632,7 @@ class OrdersTestCases(TestCase):
    #     orderItem = OrderItem.objects.get(badge=badge)
    #     orderItem.delete()
 
-   #     response = self.client.get(reverse('flush'))
+   #     response = self.client.get(reverse_lazy('flush'))
    #     self.assertEqual(response.status_code, 200)
 
     #    #Dealer, zero-sum
@@ -643,7 +642,7 @@ class OrdersTestCases(TestCase):
     #    dealer.discount = 130
     #    dealer.save()
     #    postData = {'token': dealer.registrationToken, 'email': attendee.email}
-    #    response = self.client.post(reverse('findDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('findDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
     #    postData = {'attendee': {'id': attendee.id,'firstName': "Free", 'lastName': "Testerson",
     #                             'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -661,9 +660,9 @@ class OrdersTestCases(TestCase):
     #            'priceLevel': {'id': self.price_45.id, 'options': [{'id': self.option_conbook.id, 'value': "true"}]},
     #            'event': 'Test Event 2050!'}
     #                
-    #    response = self.client.post(reverse('addDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('addDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
-    #    response = self.client.get(reverse('invoiceDealer'))
+    #    response = self.client.get(reverse_lazy('invoiceDealer'))
     #    self.assertEqual(response.status_code, 200)
     #    cart = response.context["orderItems"]
     #    self.assertEqual(len(cart), 1)
@@ -672,7 +671,7 @@ class OrdersTestCases(TestCase):
     #    orderItem = OrderItem.objects.get(badge=badge)
     #    orderItem.delete()
 
-    #    response = self.client.get(reverse('flush'))
+    #    response = self.client.get(reverse_lazy('flush'))
     #    self.assertEqual(response.status_code, 200)
 
     #    #Dealer, upgrade, Wifi
@@ -680,7 +679,7 @@ class OrdersTestCases(TestCase):
     #    badge = Badge.objects.get(attendee=attendee, event=self.event)
     #    dealer = Dealer.objects.get(attendee=attendee)
     #    postData = {'token': dealer.registrationToken, 'email': attendee.email}
-    #    response = self.client.post(reverse('findDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('findDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
     #    postData = {'attendee': {'id': attendee.id,'firstName': "Dealer", 'lastName': "Testerson",
     #                             'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -698,9 +697,9 @@ class OrdersTestCases(TestCase):
     #            'priceLevel': {'id': self.price_90.id, 'options': [{'id': self.option_conbook.id, 'value': "true"}]},
     #            'event': 'Test Event 2050!'}
     #                
-    #    response = self.client.post(reverse('addDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('addDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
-    #    response = self.client.get(reverse('invoiceDealer'))
+    #    response = self.client.get(reverse_lazy('invoiceDealer'))
     #    self.assertEqual(response.status_code, 200)
     #    cart = response.context["orderItems"]
     #    self.assertEqual(len(cart), 1)
@@ -709,7 +708,7 @@ class OrdersTestCases(TestCase):
     #    orderItem = OrderItem.objects.get(badge=badge)
     #    orderItem.delete()
 
-    #    response = self.client.get(reverse('flush'))
+    #    response = self.client.get(reverse_lazy('flush'))
     #    self.assertEqual(response.status_code, 200)
 
     #    #Dealer, partners, upgrade, wifi
@@ -717,7 +716,7 @@ class OrdersTestCases(TestCase):
     #    badge = Badge.objects.get(attendee=attendee, event=self.event)
     #    dealer = Dealer.objects.get(attendee=attendee)
     #    postData = {'token': dealer.registrationToken, 'email': attendee.email}
-    #    response = self.client.post(reverse('findDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('findDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
     #    postData = {'attendee': {'id': attendee.id, 'firstName': "Dealz", 'lastName': "Testerson",
     #                             'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -735,9 +734,9 @@ class OrdersTestCases(TestCase):
     #            'priceLevel': {'id': self.price_90.id, 'options': [{'id': self.option_conbook.id, 'value': "true"}]},
     #            'event': 'Test Event 2050!'}
 
-    #    response = self.client.post(reverse('addDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('addDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
-    #    response = self.client.get(reverse('invoiceDealer'))
+    #    response = self.client.get(reverse_lazy('invoiceDealer'))
     #    self.assertEqual(response.status_code, 200)
     #    cart = response.context["orderItems"]
     #    self.assertEqual(len(cart), 1)
@@ -746,7 +745,7 @@ class OrdersTestCases(TestCase):
     #    orderItem = OrderItem.objects.get(badge=badge)
     #    orderItem.delete()
 
-    #    response = self.client.get(reverse('flush'))
+    #    response = self.client.get(reverse_lazy('flush'))
     #    self.assertEqual(response.status_code, 200)
 
     #    #Dealer, partners+breakfast, upgrade, discount, wifi
@@ -756,7 +755,7 @@ class OrdersTestCases(TestCase):
     #    dealer.discount = 5
     #    dealer.save()
     #    postData = {'token': dealer.registrationToken, 'email': attendee.email}
-    #    response = self.client.post(reverse('findDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('findDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
     #    postData = {'attendee': {'id': attendee.id, 'firstName': "Dealz", 'lastName': "Testerson",
     #                             'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
@@ -774,9 +773,9 @@ class OrdersTestCases(TestCase):
     #            'priceLevel': {'id': self.price_90.id, 'options': [{'id': self.option_conbook.id, 'value': "true"}]},
     #            'event': 'Test Event 2050!'}
 
-    #    response = self.client.post(reverse('addDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('addDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
-    #    response = self.client.get(reverse('invoiceDealer'))
+    #    response = self.client.get(reverse_lazy('invoiceDealer'))
     #    self.assertEqual(response.status_code, 200)
     #    cart = response.context["orderItems"]
     #    self.assertEqual(len(cart), 1)
@@ -792,7 +791,7 @@ class OrdersTestCases(TestCase):
     #        },
     #        'charityDonation': "10",
     #        'orgDonation': "5"}
-    #    response = self.client.post(reverse('checkoutDealer'), json.dumps(postData), content_type="application/json")
+    #    response = self.client.post(reverse_lazy('checkoutDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
     #    orderItem = badge.orderitem_set.first()
     #    self.assertNotEqual(orderItem.order, None)
@@ -802,7 +801,7 @@ class OrdersTestCases(TestCase):
     #    self.assertEqual(order.orgDonation, 5.00)
     #    self.assertEqual(order.charityDonation, 10.00)
 
-    #    response = self.client.get(reverse('flush'))
+    #    response = self.client.get(reverse_lazy('flush'))
     #    self.assertEqual(response.status_code, 200)
 
 
@@ -823,7 +822,7 @@ class LookupTestCases(TestCase):
 
     def test_shirts(self):
         client = Client()
-        response = client.get(reverse('shirtsizes'))
+        response = client.get(reverse_lazy('shirtsizes'))
         self.assertEqual(response.status_code, 200)
         result = response.json()
         self.assertEqual(result.__len__(), 2)
@@ -832,7 +831,7 @@ class LookupTestCases(TestCase):
 
     def test_departments(self):
         client = Client()
-        response = client.get(reverse('departments'))
+        response = client.get(reverse_lazy('departments'))
         self.assertEqual(response.status_code, 200)
         result = response.json()
         self.assertEqual(result.__len__(), 2)
@@ -861,39 +860,39 @@ class Onsite(TestCase):
 
     def test_onsite_login_required(self):
         self.client.logout()
-        response = self.client.get(reverse('onsiteAdmin'), follow=True)
-        self.assertRedirects(response, '/admin/login/?next={0}'.format(reverse('onsiteAdmin')))
+        response = self.client.get(reverse_lazy('onsiteAdmin'), follow=True)
+        self.assertRedirects(response, '/admin/login/?next={0}'.format(reverse_lazy('onsiteAdmin')))
 
     def TEST_onsite_admin_required(self):
         # FIXME: always gets a 200
         self.assertTrue(self.client.login(username='john', password='john'))
-        response = self.client.get(reverse('onsiteAdmin'), follow=True)
+        response = self.client.get(reverse_lazy('onsiteAdmin'), follow=True)
         self.assertEqual(response.status_code, 401)
         self.client.logout()
 
     def test_onsite_admin(self):
         self.client.logout()
         self.assertTrue(self.client.login(username='admin', password='admin'))
-        response = self.client.get(reverse('onsiteAdmin'), follow=True)
+        response = self.client.get(reverse_lazy('onsiteAdmin'), follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['errors']), 0)
         self.assertEqual(len(response.context['terminals']), 1)
 
         self.terminal.delete()
-        response = self.client.get(reverse('onsiteAdmin'))
+        response = self.client.get(reverse_lazy('onsiteAdmin'))
         self.assertEqual(response.status_code, 200)
         errors = [ e['code'] for e in response.context['errors'] ]
         #import pdb; pdb.set_trace()
-        self.assertTrue('ERROR_NO_TERMINAL' in errors)
+        self.assertIn('ERROR_NO_TERMINAL', errors)
 
         self.terminal = Firebase(token="test", name="Terminal 1")
         self.terminal.save()
         response = self.client.get(
-            reverse('onsiteAdmin'),
+            reverse_lazy('onsiteAdmin'),
             { 'search' : 'doesntexist' }
         )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue('results' in response.context.keys())
+        self.assertIn('results', response.context.keys())
         self.assertEqual(len(response.context['results']), 0)
 
         self.client.logout()

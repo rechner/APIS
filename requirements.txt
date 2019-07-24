@@ -1,4 +1,4 @@
-django>=1.11.17
+django>=1.11.17,<1.12
 django-mathfilters==0.4.0
 django-nested-inline==0.3.7
 django-import-export>=1.1.0
@@ -8,7 +8,7 @@ django-extensions
 django-guardian
 django-flat-responsive
 django-widget-tweaks
-squareconnect==2.20181212.0
+squareconnect==2.20190612.0
 pyOpenSSL
 django-u2f
 Pillow>=5.3
