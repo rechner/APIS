@@ -578,7 +578,7 @@ def checkoutStaff(request):
 
       request.session.flush()
       try:
-          sendStaffRegistrationEmail(order.id)
+          emails.sendStaffRegistrationEmail(order.id)
       except Exception as e:
           logger.exception("Error emailing StaffRegistrationEmail - zero sum.")
           staffEmail = getStaffEmail()
@@ -603,7 +603,7 @@ def checkoutStaff(request):
     if status:
         clear_session(request)
         try:
-            sendStaffRegistrationEmail(order.id)
+            emails.sendStaffRegistrationEmail(order.id)
         except Exception as e:
             logger.exception("Error emailing StaffRegistrationEmail.")
             staffEmail = getStaffEmail()
@@ -796,7 +796,7 @@ def checkoutAsstDealer(request):
     if status:
         request.session.flush()
         try:
-            sendDealerAsstEmail(dealer.id)
+            emails.sendDealerAsstEmail(dealer.id)
         except Exception as e:
             logger.exception("Error emailing DealerAsstEmail.")
             dealerEmail = getDealerEmail()
@@ -932,7 +932,7 @@ def checkoutDealer(request):
             request.session.flush()
 
             try:
-                sendDealerPaymentEmail(dealer, order)
+                emails.sendDealerPaymentEmail(dealer, order)
             except Exception as e:
                 logger.exception("Error sending DealerPaymentEmail - zero sum.")
                 dealerEmail = getDealerEmail()
@@ -956,7 +956,7 @@ def checkoutDealer(request):
             request.session.flush()
             try:
                 dealer.resetToken()
-                sendDealerPaymentEmail(dealer, order)
+                emails.sendDealerPaymentEmail(dealer, order)
             except Exception as e:
                 logger.exception("Error sending DealerPaymentEmail. " + request.body.decode('utf-8'))
                 dealerEmail = getDealerEmail()
@@ -1013,7 +1013,7 @@ def addNewDealer(request):
             dealerPartner.save()
 
         try:
-            sendDealerApplicationEmail(dealer.id)
+            emails.sendDealerApplicationEmail(dealer.id)
         except Exception as e:
             logger.exception("Error sending DealerApplicationEmail.")
             dealerEmail = getDealerEmail()
@@ -1631,7 +1631,7 @@ def checkoutUpgrade(request):
 
         request.session.flush()
         try:
-            sendUpgradePaymentEmail(attendee, order)
+            emails.sendUpgradePaymentEmail(attendee, order)
         except Exception as e:
             logger.exception("Error sending UpgradePaymentEmail - zero sum.")
             registrationEmail = getRegistrationEmail(event)
@@ -1654,7 +1654,7 @@ def checkoutUpgrade(request):
     if status:
         request.session.flush()
         try:
-            sendUpgradePaymentEmail(attendee, order)
+            emails.sendUpgradePaymentEmail(attendee, order)
         except Exception as e:
             logger.exception("Error sending UpgradePaymentEmail.")
             registrationEmail = getRegistrationEmail(event)

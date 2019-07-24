@@ -33,6 +33,7 @@ install:
   - pip freeze
   - cp fm_eventmanager/settings.py.travis fm_eventmanager/settings.py
 script:
+  - coverage run manage.py validate_templates
   - coverage run manage.py test registration
   - coverage report
 after_success:

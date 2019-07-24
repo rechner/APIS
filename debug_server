@@ -1,5 +1,11 @@
 #!/bin/bash
 if [[ "$VIRTUAL_ENV" != "" ]]; then
-    source /usr/local/venvs/apis/bin/activate
+    if [ -e venv/bin/activate ]; then
+        source venv/bin/activate
+    elif [ -e /usr/local/venvs/apis/bin/activate ]; then
+        source /usr/local/venvs/apis/bin/activate
+    else
+        echo "Warning: no venv provided or activated."
+    fi
 fi
 DJANGO_DEBUG=1 python -Wall ./manage.py runserver_plus

@@ -121,7 +121,7 @@ def sendDealerApplicationEmail(dealerId):
     msgTxt = render_to_string('registration/emails/dealerNotice.txt', data)
     msgHtml = render_to_string('registration/emails/dealerNotice.html', data)
     sendEmail(dealerEmail, [dealerEmail,],
-              "{0} Dealer Application Received".format(event.name),
+              "{0} Dealer Application Received".format(dealer.event.name),
               msgTxt, msgHtml)
 
 def sendDealerAsstFormEmail(dealer):

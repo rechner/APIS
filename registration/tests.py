@@ -1,3 +1,6 @@
+# TODO: wire in fixture test cases. See:
+# https://docs.djangoproject.com/en/1.11/topics/testing/tools/#django.test.TransactionTestCase.fixtures
+
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -221,7 +224,7 @@ class OrdersTestCases(TestCase):
 
         message = result.json()
         error_codes = [ err['code'] for err in message['reason']['errors'] ]
-        logger.error(error_codes)
+        #logger.error(error_codes)
         self.assertIn(error, error_codes)
 
         # Ensure a badge wasn't created

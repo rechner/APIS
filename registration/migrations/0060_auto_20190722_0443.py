@@ -14,11 +14,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='priceleveloption',
-            name='optionImage',
-            field=models.ImageField(blank=True, null=True, upload_to=registration.models.content_file_name),
-        ),
         migrations.AlterField(
             model_name='order',
             name='discount',
