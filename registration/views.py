@@ -50,7 +50,6 @@ def index(request):
     context = { 'event' : event }
     # Render database field template to pass into "Agree to terms" checkbox:
     templ = Template(event.attendeeCodeOfConduct)
-    #import pdb; pdb.set_trace()
     context['agreement'] = templ.render(DjangoContext(dict(event=event)))
 
     if event.attendeeRegStart <= today <= event.attendeeRegEnd:
@@ -128,7 +127,7 @@ def doCheckout(billingData, total, discount, cartItems, orderItems, donationOrg,
 
 def doZeroCheckout(discount, cartItems, orderItems):
     if cartItems:
-        attendee = json.loads(cartItems[0].formData)['attendee']
+        attendee = cartItems[0].formJSON['attendee']
         billingName = "{firstName} {lastName}".format(**attendee)
         billingEmail = attendee['email']
     elif orderItems:
@@ -200,8 +199,7 @@ def getTotal(cartItems, orderItems, disc = ""):
     if not cartItems and not orderItems:
         return 0, 0
     for item in cartItems:
-        postData = json.loads(str(item.formData))
-        pdp = postData['priceLevel']
+        pdp = item.formJSON['priceLevel']
         priceLevel = PriceLevel.objects.get(id=pdp['id'])
         itemTotal = priceLevel.basePrice
 
@@ -1733,7 +1731,7 @@ def getCart(request):
 
         hasMinors = False
         for cart in cartItems:
-            cartJson = json.loads(cart.formData)
+            cartJson = cart.formJSON
             pda = cartJson['attendee']
             event = Event.objects.get(name=cartJson['event'])
             evt = event.eventStart
@@ -1779,7 +1777,7 @@ def getCart(request):
     return render(request, 'registration/checkout.html', context)
 
 def saveCart(cart):
-    postData = json.loads(cart.formData)
+    postData = cart.formJSON
     pda = postData['attendee']
     pdp = postData['priceLevel']
     evt = postData['event']
@@ -1857,7 +1855,7 @@ def addToCart(request):
         registrationEmail = getRegistrationEmail()
         return abort(403, "We are sorry, but you are unable to register for {0}. If you have any questions, or would like further information or assistance, please contact Registration at {1}".format(event, registrationEmail))
 
-    cart = Cart(form=Cart.ATTENDEE, formData=request.body, formHeaders=getRequestMeta(request))
+    cart = Cart(form=Cart.ATTENDEE, formJSON=postData, headersJSON=getRequestMeta(request))
     cart.save()
 
     #add attendee to session order
@@ -2143,7 +2141,7 @@ def getRequestMeta(request):
     values['HTTP_REFERER'] = request.META.get('HTTP_REFERER')
     values['HTTP_USER_AGENT'] = request.META.get('HTTP_USER_AGENT')
     values['IP'] = get_client_ip(request)
-    return json.dumps(values)
+    return values
 
 def getOptionsDict(orderItems):
     orderDict = []
@@ -2298,7 +2296,7 @@ def getSessionAddresses(request):
         data = []
         cartItems = list(Cart.objects.filter(id__in=sessionItems))
         for cart in cartItems:
-            cartJson = json.loads(cart.formData)
+            cartJson = cart.formJSON
             pda = cartJson['attendee']
             cartItem = {
                 'fname': pda['firstName'],

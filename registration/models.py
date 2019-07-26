@@ -634,8 +634,10 @@ class Cart(models.Model):
     FORM_CHOICES = ((ATTENDEE, 'Attendee'), (STAFF, 'Staff'), (DEALER, 'Dealer'), (ASST, 'Dealer Assistant'))
     token = models.CharField(max_length=200, blank=True, null=True)
     form = models.CharField(max_length=50, choices=FORM_CHOICES)
-    formData = models.TextField()
-    formHeaders = models.TextField()
+    formData = models.TextField(null=True)    # Deprecated
+    formJSON = JSONField(null=True)
+    formHeaders = models.TextField(null=True) # Deprecated
+    headersJSON = JSONField(null=True)
     enteredDate = models.DateTimeField(auto_now_add=True, null=True)
     transferedDate = models.DateTimeField(null=True)
 

@@ -48,7 +48,7 @@ def chargePayment(order, ccData, ipAddress):
 
         body = {
             'idempotency_key': idempotency_key,
-            'card_nonce': ccData["nonce"], 
+            'card_nonce': ccData["nonce"],
             'amount_money': amount,
             'reference_id': order.reference,
             'billing_address': billing_address
@@ -95,95 +95,5 @@ def chargePayment(order, ccData, ipAddress):
             return False, json.loads(e.body)
         except:
             return False, str(e)
-
-def cardType(number):
-    number = str(number)
-    cardtype = ""
-    if len(number) == 15:
-        if number[:2] == "34" or number[:2] == "37":
-            cardtype = "American Express"
-    if len(number) == 13:
-        if number[:1] == "4":
-            cardtype = "Visa"
-    if len(number) == 16:
-        if number[:4] == "6011":
-            cardtype = "Discover"
-        if int(number[:2]) >= 51 and int(number[:2]) <= 55:
-            cardtype = "Master Card"
-        if number[:1] == "4":
-            cardtype = "Visa"
-    return cardtype
-
-
-
-
-#from authorizenet import apicontractsv1
-#from authorizenet.apicontrollers import *
-
-def chargePayment_authnet(orderId, ccData, ipAddress):
-#    order = Order.objects.get(id=orderId)
-#    clientIP = ipAddress
-
-#    merchantAuth = apicontractsv1.merchantAuthenticationType()
-#    merchantAuth.name = settings.AUTHNET_NAME
-#    merchantAuth.transactionKey = settings.AUTHNET_TRANSACTIONKEY
-
-#    creditCard = apicontractsv1.creditCardType()
-#    creditCard.cardNumber = ccData['cc_number']
-#    creditCard.expirationDate = ccData['cc_year'] + '-' + ccData['cc_month']
-#    billTo = apicontractsv1.customerAddressType()
-#    billTo.firstName = ccData['cc_firstname']
-#    billTo.lastName = ccData['cc_lastname']
-#    billTo.address = ccData['address1'] + " " + ccData['address2']
-#    billTo.city = ccData['city']
-#    billTo.state = ccData['state']
-#    billTo.zip = ccData['postal']
-#    billTo.country = ccData['country']
-
-#    ordertype = apicontractsv1.orderType()
-#    ordertype.invoiceNumber = order.reference
-#    ordertype.description = "APIS"
-#    payment = apicontractsv1.paymentType()
-#    payment.creditCard = creditCard
-#    transactionrequest = apicontractsv1.transactionRequestType()
-#    transactionrequest.transactionType ="authCaptureTransaction"
-#    transactionrequest.amount = order.total
-#    transactionrequest.payment = payment
-#    transactionrequest.billTo = billTo
-#    transactionrequest.order = ordertype
-#    transactionrequest.customerIP = clientIP
-#    createtransactionrequest = apicontractsv1.createTransactionRequest()
-#    createtransactionrequest.merchantAuthentication = merchantAuth
-#    createtransactionrequest.refId = order.reference
-
-#    createtransactionrequest.transactionRequest = transactionrequest
-#    createtransactioncontroller = createTransactionController(createtransactionrequest)
-#    createtransactioncontroller.execute()
-#    response = createtransactioncontroller.getresponse()
-#    if response is not None:
-#        if response.messages.resultCode == "Ok":
-#            if hasattr(response.transactionResponse, 'messages') == True:
-#                print ('Successfully created transaction with Transaction ID: %s' % response.transactionResponse.transId);
-#                print ('Transaction Response Code: %s' % response.transactionResponse.responseCode);
-#                print ('Message Code: %s' % response.transactionResponse.messages.message[0].code);
-#                print ('Description: %s' % response.transactionResponse.messages.message[0].description);
-#            else:
-#                print ('Failed Transaction.');
-#                if hasattr(response.transactionResponse, 'errors') == True:
-#                    print ('Error Code:  %s' % str(response.transactionResponse.errors.error[0].errorCode));
-#                    print ('Error message: %s' % response.transactionResponse.errors.error[0].errorText);
-#        else:
-#            print ('Failed Transaction.');
-#            if hasattr(response, 'transactionResponse') == True and hasattr(response.transactionResponse, 'errors') == True:
-#                print ('Error Code: %s' % str(response.transactionResponse.errors.error[0].errorCode));
-#                print ('Error message: %s' % response.transactionResponse.errors.error[0].errorText);
-#            else:
-#                print ('Error Code: %s' % response.messages.message[0]['code'].text);
-#                print ('Error message: %s' % response.messages.message[0]['text'].text);
-#    else:
-#        print ('Null Response.');
-
-#    return response
-    return None
 
 # vim: ts=4 sts=4 sw=4 expandtab smartindent

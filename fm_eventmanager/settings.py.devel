@@ -70,7 +70,6 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'flat_responsive',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -95,7 +94,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -195,10 +193,6 @@ APIS_STAFF_HEAD = "staff@example.com"
 
 # The age, in years, below which an attendee is considered a minor.
 APIS_LEGAL_AGE = 18
-
-# Authorize.net (deprecated) 
-AUTHNET_NAME = '426rwVfr3G47'
-AUTHNET_TRANSACTIONKEY = '399UTfznCV7gz224'
 
 # Sandbox values = DO NOT check in production ids
 # Square API keys

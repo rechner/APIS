@@ -1,7 +1,7 @@
 # TODO: wire in fixture test cases. See:
 # https://docs.djangoproject.com/en/1.11/topics/testing/tools/#django.test.TransactionTestCase.fixtures
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy

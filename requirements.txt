@@ -1,4 +1,4 @@
-django>=1.11.17,<1.12
+django>=2.2,<2.3
 django-mathfilters==0.4.0
 django-nested-inline==0.3.7
 django-import-export>=1.1.0
@@ -6,8 +6,8 @@ psycopg2>=2.7.1
 configobj
 django-extensions
 django-guardian
-django-flat-responsive
 django-widget-tweaks
+django-nested-admin
 squareconnect==2.20190612.0
 pyOpenSSL
 django-u2f
