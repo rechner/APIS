@@ -4,6 +4,8 @@ from django.conf import settings
 
 from . import views
 
+#app_name = "registration"
+
 urlpatterns = [
     url(r'^$', views.index, name='index'),
 
@@ -98,8 +100,3 @@ urlpatterns = [
 
 ]
 
-if settings.DEBUG:
-    import debug_toolbar
-    urlpatterns = [
-        url(r'^__debug__/', include(debug_toolbar.urls)),
-    ] + urlpatterns

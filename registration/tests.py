@@ -8,6 +8,7 @@ from django.urls import reverse_lazy
 from django.test.utils import override_settings
 from django.test import TestCase, Client
 from django.conf import settings
+from django.utils import timezone
 from unittest import skip
 import logging
 import json
@@ -17,9 +18,8 @@ from .models import *
 logger = logging.getLogger(__name__)
 logging.disable(logging.NOTSET)
 logger.setLevel(logging.DEBUG)
-        
-tz = timezone.get_current_timezone()
-now = tz.localize(datetime.now())
+
+now = timezone.now()
 ten_days = timedelta(days=10)
 
 DEFAULT_EVENT_ARGS = dict(
@@ -40,13 +40,13 @@ class DebugURLTrigger(TestCase):
 class Index(TestCase):
     def setUp(self):
         self.client = Client()
-   
+
     # unit tests skip methods that start with uppercase letters
     def TestIndex(self):
         response = self.client.get(reverse_lazy('index'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Welcome to the registration system')
-   
+
     def TestIndexClosed(self):
         response = self.client.get(reverse_lazy('index'))
         self.assertEqual(response.status_code, 200)
@@ -130,7 +130,7 @@ class OrdersTestCases(TestCase):
                                 tableMin=0, tableMax=1, partnerMin=0, partnerMax=1, basePrice=Decimal(130))
         self.table_160 = TableSize(name="Booth", description="description here", chairMin=0, chairMax=1,
                                 tableMin=0, tableMax=1, partnerMin=0, partnerMax=2, basePrice=Decimal(160))
-       
+
         self.table_130.save()
         self.table_160.save()
 
@@ -140,7 +140,7 @@ class OrdersTestCases(TestCase):
                                  'volunteer': "false",'volDepts': "", 'surveyOk': "false"}
         self.attendee_regular_2 = {'firstName': "Bea", 'lastName': "Testerson", 'address1': "123 Somewhere St", 'address2': "Ste 300", 'city': "Place",
                                  'state': "PA", 'country': "US", 'postal': "12345", 'phone': "1112223333", 'email': "apis@mailinator.com",
-                                 'birthdate': "1990-01-01", 'asl': "false", 'badgeName': "FluffyButz", 'emailsOk': "true", 
+                                 'birthdate': "1990-01-01", 'asl': "false", 'badgeName': "FluffyButz", 'emailsOk': "true",
                                  'volunteer': "false", 'volDepts': "", 'surveyOk': "false"}
 
 
@@ -188,7 +188,7 @@ class OrdersTestCases(TestCase):
 
         response = self.checkout('fake-card-nonce-ok', '20', '10')
         self.assertEqual(response.status_code, 200)
-        
+
         # Check that user was succesfully saved
         attendee = Attendee.objects.get(firstName='Bea')
         badge = Badge.objects.get(attendee=attendee,event=self.event)
@@ -196,7 +196,7 @@ class OrdersTestCases(TestCase):
         self.assertEqual(badge.orderitem_set.count(), 1)
         orderItem = badge.orderitem_set.first()
         self.assertNotEqual(orderItem.order, None)
-       
+
         order = badge.getOrder()
         self.assertEqual(order.discount, None)
         self.assertEqual(order.total, 45+10+20)
@@ -217,7 +217,7 @@ class OrdersTestCases(TestCase):
         # TODO
         pass
 
-    def assertSquareError(self, nonce, error): 
+    def assertSquareError(self, nonce, error):
         self.add_to_cart(self.attendee_regular_2, self.price_45, [])
         result = self.checkout(nonce)
         self.assertEqual(result.status_code, 400)
@@ -228,11 +228,11 @@ class OrdersTestCases(TestCase):
         self.assertIn(error, error_codes)
 
         # Ensure a badge wasn't created
-        self.assertEqual(Attendee.objects.filter(firstName='Bea').count(), 0) 
-    
+        self.assertEqual(Attendee.objects.filter(firstName='Bea').count(), 0)
+
     def test_bad_cvv(self):
         self.assertSquareError('fake-card-nonce-rejected-cvv', 'VERIFY_CVV_FAILURE')
-    
+
     def test_bad_postalcode(self):
         self.assertSquareError('fake-card-nonce-rejected-postalcode', 'VERIFY_AVS_FAILURE')
 
@@ -262,7 +262,7 @@ class OrdersTestCases(TestCase):
         return response
 
     def checkout(self, nonce, orgDonation='', charityDonation=''):
-        postData = {'billingData': 
+        postData = {'billingData':
                         {'address1': '123 Any Street',
                          'address2': 'Apt 4',
                          'card_data': {'billing_postal_code': '12345',
@@ -306,7 +306,7 @@ class OrdersTestCases(TestCase):
         cart = response.context["orderItems"]
         self.assertEqual(len(cart), 0)
         self.assertEqual(Attendee.objects.filter(firstName="Tester").count(), 0)
-        self.assertEqual(Badge.objects.filter(badgeName="FluffyButz").count(), 0) 
+        self.assertEqual(Badge.objects.filter(badgeName="FluffyButz").count(), 0)
         self.assertEqual(PriceLevel.objects.filter(id=self.price_45.id).count(), 1)
 
     def test_vip_checkout(self):
@@ -420,7 +420,7 @@ class OrdersTestCases(TestCase):
         staff.save()
         badge = Badge(attendee=attendee,event=self.event,badgeName="DisStaff")
         badge.save()
-        attendee2 = Attendee(firstName="Staph", lastName="Testerson", 
+        attendee2 = Attendee(firstName="Staph", lastName="Testerson",
                             address1="123 Somewhere St", city="Place", state="PA", country="US", postalCode=12345,
                             phone="1112223333", email="apis@mailinator.org", birthdate="1990-01-01")
         attendee2.save()
@@ -445,7 +445,7 @@ class OrdersTestCases(TestCase):
                                  'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
                                  'phone': "1112223333",'email': "apis@mailinator.com",'birthdate': "1990-01-01",
                                  'badgeName': "FluffyButz",'emailsOk': "true"},
-                    'staff': {'id': staff.id, 
+                    'staff': {'id': staff.id,
                     'department': self.department1.id, 'title': 'Something Cool',
                     'twitter': "@twitstaff", 'telegram': "@twitstaffagain",
                     'shirtsize': self.shirt1.id, 'specialSkills': "Something here",
@@ -494,7 +494,7 @@ class OrdersTestCases(TestCase):
                                  'address1': "123 Somewhere St",'address2': "",'city': "Place",'state': "PA",'country': "US",'postal': "12345",
                                  'phone': "1112223333",'email': "carissa.brittain@gmail.com",'birthdate': "1990-01-01",
                                  'badgeName': "FluffyButz",'emailsOk': "true"},
-                    'staff': {'id': staff2.id, 
+                    'staff': {'id': staff2.id,
                     'department': self.department2.id, 'title': 'Something Cool',
                     'twitter': "@twitstaff", 'telegram': "@twitstaffagain",
                     'shirtsize': self.shirt1.id, 'specialSkills': "Something here",
@@ -654,15 +654,15 @@ class OrdersTestCases(TestCase):
     #            'dealer': {'id': dealer.id,'businessName':"Something Creative", 'website':"http://www.something.com",
     #            'license':"jkah9435kd", 'power': True, 'wifi': False,
     #            'wall': True, 'near': "Someone", 'far': "Someone Else",
-    #            'description': "Stuff for sale", 'tableSize': self.table_130.id,  
+    #            'description': "Stuff for sale", 'tableSize': self.table_130.id,
     #            'chairs': 1, 'partners': "name_1: , email_1: , license_1: , tempLicense_1: false,", 'tables': 0,
-    #            'reception': True, 'artShow': False, 
+    #            'reception': True, 'artShow': False,
     #            'charityRaffle': "Some stuff", 'agreeToRules': True,
     #            'breakfast': True, 'switch': False,
     #            'buttonOffer': "Buttons", 'asstbreakfast': False},
     #            'priceLevel': {'id': self.price_45.id, 'options': [{'id': self.option_conbook.id, 'value': "true"}]},
     #            'event': 'Test Event 2050!'}
-    #                
+    #
     #    response = self.client.post(reverse_lazy('addDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
     #    response = self.client.get(reverse_lazy('invoiceDealer'))
@@ -691,15 +691,15 @@ class OrdersTestCases(TestCase):
     #            'dealer': {'id': dealer.id,'businessName':"Something Creative", 'website':"http://www.something.com",
     #            'license':"jkah9435kd", 'power': True, 'wifi': True,
     #            'wall': True, 'near': "Someone", 'far': "Someone Else",
-    #            'description': "Stuff for sale", 'tableSize': self.table_130.id,  
+    #            'description': "Stuff for sale", 'tableSize': self.table_130.id,
     #            'chairs': 1, 'partners': "name_1: , email_1: , license_1: , tempLicense_1: false,", 'tables': 0,
-    #            'reception': True, 'artShow': False, 
+    #            'reception': True, 'artShow': False,
     #            'charityRaffle': "Some stuff", 'agreeToRules': True,
     #            'breakfast': True, 'switch': False,
     #            'buttonOffer': "Buttons", 'asstbreakfast': False},
     #            'priceLevel': {'id': self.price_90.id, 'options': [{'id': self.option_conbook.id, 'value': "true"}]},
     #            'event': 'Test Event 2050!'}
-    #                
+    #
     #    response = self.client.post(reverse_lazy('addDealer'), json.dumps(postData), content_type="application/json")
     #    self.assertEqual(response.status_code, 200)
     #    response = self.client.get(reverse_lazy('invoiceDealer'))
@@ -728,9 +728,9 @@ class OrdersTestCases(TestCase):
     #            'dealer': {'id': dealer.id, 'businessName':"Something Creative", 'website':"http://www.something.com",
     #            'license':"jkah9435kd", 'power': True, 'wifi': True,
     #            'wall': True, 'near': "Someone", 'far': "Someone Else",
-    #            'description': "Stuff for sale", 'tableSize': self.table_160.id,  
+    #            'description': "Stuff for sale", 'tableSize': self.table_160.id,
     #            'chairs': 1, 'partners': "name_1: Someone, email_1: someone@here.com, license_1: temporary, tempLicense_1: true, name_2: , email_2: , license_2: , tempLicense_2: false", 'tables': 0,
-    #            'reception': False, 'artShow': False, 
+    #            'reception': False, 'artShow': False,
     #            'charityRaffle': "Some stuff", 'agreeToRules': True,
     #            'breakfast': False, 'switch': False,
     #            'buttonOffer': "Buttons", 'asstbreakfast': False},
@@ -767,9 +767,9 @@ class OrdersTestCases(TestCase):
     #            'dealer': {'id': dealer.id, 'businessName':"Something Creative", 'website':"http://www.something.com",
     #            'license':"jkah9435kd", 'power': True, 'wifi': True,
     #            'wall': True, 'near': "Someone", 'far': "Someone Else",
-    #            'description': "Stuff for sale", 'tableSize': self.table_160.id,  
+    #            'description': "Stuff for sale", 'tableSize': self.table_160.id,
     #            'chairs': 1, 'partners': "name_1: Someone, email_1: someone@here.com, license_1: temporary, tempLicense_1: true, name_2: , email_2: , license_2: , tempLicense_2: false", 'tables': 0,
-    #            'reception': False, 'artShow': False, 
+    #            'reception': False, 'artShow': False,
     #            'charityRaffle': "Some stuff", 'agreeToRules': True,
     #            'breakfast': True, 'switch': False,
     #            'buttonOffer': "Buttons", 'asstbreakfast': True},
@@ -787,7 +787,7 @@ class OrdersTestCases(TestCase):
 
     #    #Dealer, partners+breakfast, upgrade, wifi, discount, donations
     #    postData = {'billingData': {
-    #            'nonce': 'fake-card-nonce-ok', 
+    #            'nonce': 'fake-card-nonce-ok',
     #            'cc_firstname': "Test", 'cc_lastname': "Credit", 'email': "thing@some.com",
     #            'address1': "123 Somewhere", 'address2': "", 'city': "There",
     #            'state': "PA", 'country': "US", 'postal': "12345",

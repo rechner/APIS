@@ -89,7 +89,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
 ]
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -192,6 +192,9 @@ SESSION_COOKIE_AGE = 60*60  # 1hr
 APIS_DEFAULT_EMAIL = "registration@example.com"
 APIS_DEALER_HEAD = "marketplace@example.com"
 APIS_STAFF_HEAD = "staff@example.com"
+
+# The age, in years, below which an attendee is considered a minor.
+APIS_LEGAL_AGE = 18
 
 # Authorize.net (deprecated) 
 AUTHNET_NAME = '426rwVfr3G47'

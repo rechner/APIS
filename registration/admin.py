@@ -15,12 +15,14 @@ from django.urls import reverse
 from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
 from nested_inline.admin import NestedTabularInline, NestedModelAdmin
+import nested_admin
 
 from django.contrib import messages, auth
 from django.contrib.admin.models import LogEntry, DELETION
+from django.contrib.sites.admin import SiteAdmin as BaseSiteAdmin
+from django.contrib.sites.models import Site
 from django.utils.html import escape
-
-from django_extensions.admin import ForeignKeyAutocompleteAdmin
+from django_extensions.admin import ForeignKeyAutocompleteAdmin, ForeignKeyAutocompleteStackedInline
 
 from .models import *
 from .emails import *
@@ -49,9 +51,22 @@ def disable_two_factor(modeladmin, request, queryset):
         obj.delete()
 disable_two_factor.short_description = 'Disable 2FA'
 
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ('PIN',)
+        widgets = {
+            'PIN' : forms.PasswordInput(),
+        }
+
+class ProfileAdmin(admin.StackedInline):
+    model = Profile
+    #form = ProfileForm
+
 class UserProfileAdmin(auth.admin.UserAdmin):
     model = User
     list_display = ('username', 'email', 'first_name', 'last_name', 'two_factor_enabled')
+    inlines = (ProfileAdmin,)
     actions = [disable_two_factor,]
 
     def two_factor_enabled(self, obj):
@@ -608,11 +623,14 @@ def print_staff_badges(modeladmin, request, queryset):
     return response
 print_staff_badges.short_description = "Print Staff Badges"
 
-class AttendeeOptionInline(NestedTabularInline):
-    model=AttendeeOptions
-    extra=0
+class AttendeeOptionInline(NestedTabularInline, ForeignKeyAutocompleteStackedInline):
+    model = AttendeeOptions
+    extra = 0
 
-class OrderItemInline(NestedTabularInline):
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        field = super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+class OrderItemInline(NestedTabularInline, ForeignKeyAutocompleteStackedInline):
     model=OrderItem
     extra=0
     inlines = [AttendeeOptionInline]
@@ -629,7 +647,7 @@ class BadgeInline(NestedTabularInline):
         born = obj.attendee.birthdate
         today = date.today()
         age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-        if age >= 18: return format_html('<span>18+</span>')
+        if age >= settings.APIS_LEGAL_AGE: return format_html('<span>{0}+</span>'.format(settings.APIS_LEGAL_AGE))
         return format_html('<span style="color:red">MINOR FORM<br/>REQUIRED</span>')
     get_age_range.short_description = "Age Group"
 
@@ -647,7 +665,7 @@ class BadgeResource(resources.ModelResource):
                   'attendee__postalCode', 'attendee__phone', 'attendee__email', 'badgeName', 'badgeNumber', 'attendee__aslRequest',
 		  'registeredDate'
                   )
-        export_order = ('id', 'printed', 'event__name', 'badge_level', 'registeredDate', 
+        export_order = ('id', 'printed', 'event__name', 'badge_level', 'registeredDate',
                   'attendee__firstName', 'attendee__lastName', 'attendee__address1',
                   'attendee__address2', 'attendee__city', 'attendee__state', 'attendee__country',
                   'attendee__postalCode', 'attendee__phone', 'attendee__email', 'badgeName', 'badgeNumber', 'attendee__aslRequest',
@@ -676,7 +694,7 @@ class BadgeAdmin(NestedModelAdmin, ImportExportModelAdmin, ForeignKeyAutocomplet
     list_display = ('attendee', 'badgeName', 'badgeNumber', 'printed', 'paidTotal', 'effectiveLevel', 'abandoned',
                     'get_age_range', 'registeredDate')
     search_fields = ['attendee__email', 'attendee__lastName', 'attendee__firstName', 'badgeName', 'badgeNumber']
-    
+
     readonly_fields = ['get_age_range', ]
     actions = [
         assign_badge_numbers,
@@ -712,12 +730,13 @@ class BadgeAdmin(NestedModelAdmin, ImportExportModelAdmin, ForeignKeyAutocomplet
             born = obj.attendee.birthdate
             today = date.today()
             age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-            if age >= 18: return format_html('<span>18+</span>')
+            if age >= settings.APIS_LEGAL_AGE: return format_html('<span>18+</span>')
             return format_html('<span style="color:red">MINOR FORM<br/>REQUIRED</span>')
         except:
             return 'Invalid DOB'
     get_age_range.short_description = "Age Group"
 
+    #XXX Legacy?
     def cull_abandoned_carts(self, request, queryset):
         abandoned = [ x for x in Badge.objects.filter() if x.abandoned == 'Abandoned' ]
         for obj in abandoned:
@@ -771,8 +790,6 @@ class AttendeeAdmin(NestedModelAdmin, ForeignKeyAutocompleteAdmin):
 
 admin.site.register(Attendee, AttendeeAdmin)
 admin.site.register(AttendeeOptions)
-
-admin.site.register(OrderItem)
 
 def send_registration_email(modeladmin, request, queryset):
     for order in queryset:
@@ -847,4 +864,40 @@ class CashdrawerAdmin(admin.ModelAdmin):
         obj.user = request.user
         obj.save()
 
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_staff:
+            if request.user.is_superuser:
+                return []
+            else:
+                return ["user",]
+
 admin.site.register(Cashdrawer, CashdrawerAdmin)
+
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ('order', 'badge', 'priceLevel', 'enteredBy')
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_staff:
+            if request.user.is_superuser:
+                return []
+            else:
+                return ["enteredBy",]
+
+    def save_model(self, request, obj, form, change):
+        obj.enteredBy = "admin:{0}".format(request.user)
+        obj.save()
+
+admin.site.register(OrderItem, OrderItemAdmin)
+
+class SiteOptionsInline(admin.StackedInline):
+    model = SiteOptions
+    can_delete = False
+
+class SiteAdmin(BaseSiteAdmin):
+    inlines = (SiteOptionsInline,)
+
+admin.site.unregister(Site)
+admin.site.register(Site, SiteAdmin)
+
+
+# vim: sts=4 ts=4 sw=4 expandtab

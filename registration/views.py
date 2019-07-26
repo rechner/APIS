@@ -1,9 +1,22 @@
+import time
+from datetime import datetime, date
+from decimal import Decimal
+from operator import itemgetter
+import itertools
+import os
+import json
+import random
+import string
+import sys
+import logging
+
 from django.contrib.admin.views.decorators import staff_member_required, user_passes_test
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core import serializers
 from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from django.shortcuts import render, redirect
+from django.template import Context as DjangoContext, Template
 from django.template.response import TemplateResponse
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
@@ -14,18 +27,6 @@ try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
-
-import time
-from datetime import datetime, date
-from decimal import *
-from operator import itemgetter
-import itertools
-import os
-import json
-import random
-import string
-import sys
-import logging
 
 from .models import *
 from .payments import chargePayment
@@ -47,6 +48,11 @@ def index(request):
 
     today = timezone.now()
     context = { 'event' : event }
+    # Render database field template to pass into "Agree to terms" checkbox:
+    templ = Template(event.attendeeCodeOfConduct)
+    #import pdb; pdb.set_trace()
+    context['agreement'] = templ.render(DjangoContext(dict(event=event)))
+
     if event.attendeeRegStart <= today <= event.attendeeRegEnd:
         return render(request, 'registration/registration-form.html', context)
     return render(request, 'registration/closed.html', context)
@@ -73,7 +79,7 @@ def doCheckout(billingData, total, discount, cartItems, orderItems, donationOrg,
     reference = getConfirmationToken()
     while Order.objects.filter(reference=reference).exists():
         reference = getConfirmationToken()
-        
+
     order = Order(total=Decimal(total), reference=reference, discount=discount,
                   orgDonation=donationOrg, charityDonation=donationCharity)
 
@@ -97,7 +103,7 @@ def doCheckout(billingData, total, discount, cartItems, orderItems, donationOrg,
         order.lastFour = card_data['last_4']
     except KeyError as e:
         abort(400, "A required field was missing from billingData: {0}".format(e))
-        
+
     status, response = chargePayment(order, billingData, ip)
 
     if status:
@@ -135,7 +141,6 @@ def doZeroCheckout(discount, cartItems, orderItems):
     while Order.objects.filter(reference=reference).count() > 0:
         reference = getConfirmationToken()
 
-    logger.debug(attendee)
     order = Order(total=0, reference=reference, discount=discount,
                   orgDonation=0, charityDonation=0, status="Complete",
                   billingType=Order.COMP, billingEmail=billingEmail,
@@ -428,7 +433,11 @@ def findStaff(request):
 
 def infoStaff(request):
     event = Event.objects.get(default=True)
-    context = {'staff': None, 'event': event}
+    # Render database field template to pass into "Agree to terms" checkbox:
+    templ = Template(event.attendeeCodeOfConduct)
+    agreement = templ.render(DjangoContext(dict(event=event)))
+
+    context = {'staff': None, 'event': event, 'agreement' : agreement}
     try:
         staffId = request.session['staff_id']
     except Exception as e:
@@ -444,9 +453,14 @@ def infoStaff(request):
         if badges.count() > 0:
             badge = badges[0]
 
-        context = {'staff': staff, 'jsonStaff': json.dumps(staff_dict, default=handler),
-                   'jsonAttendee': json.dumps(attendee_dict, default=handler),
-                   'badge': badge, 'event': event}
+        context = {
+            'staff': staff,
+            'jsonStaff': json.dumps(staff_dict, default=handler),
+            'jsonAttendee': json.dumps(attendee_dict, default=handler),
+            'badge': badge,
+            'event': event,
+            'agreement' : agreement,
+        }
     return render(request, 'registration/staff/staff-payment.html', context)
 
 
@@ -652,6 +666,11 @@ def newDealer(request):
     event = Event.objects.get(default=True)
     today = timezone.now()
     context = {'event': event}
+
+    # Render database field template to pass into "Agree to terms" checkbox:
+    templ = Template(event.dealerCodeOfConduct)
+    context['agreement'] = templ.render(DjangoContext(dict(event=event)))
+
     if event.dealerRegStart <= today <= event.dealerRegEnd:
         return render(request, 'registration/dealer/dealer-form.html', context)
     return render(request, 'registration/dealer/dealer-closed.html', context)
@@ -1005,7 +1024,7 @@ def addNewDealer(request):
                         agreeToRules=pdd['agreeToRules'], buttonOffer=pdd['buttonOffer'], asstBreakfast=pdd['asstbreakfast']
                         )
         dealer.save()
-    
+
         partners = pdd['partners']
         for partner in partners:
             dealerPartner = DealerAsst(dealer=dealer, event=event, name=partner['name'],
@@ -1192,7 +1211,7 @@ def onsiteAdminCart(request):
             'badgeName' : badge.badgeName,
             'abandoned' : badge.abandoned,
             'effectiveLevel' : effectiveLevel,
-            'discount' : badge.getDiscount(),
+            'discount' : badge.getDiscountCode(),
             'age' : get_age(badge)
         }
         result.append(item)
@@ -1359,6 +1378,7 @@ def onsiteSelectTerminal(request):
 
 #@staff_member_required
 def assignBadgeNumber(request):
+    #FIXME: Needs to be a POST to work, really
     badge_id = request.GET.get('id');
     badge_number = request.GET.get('number')
     badge_name = request.GET.get('badge', None)
@@ -1391,6 +1411,8 @@ def assignBadgeNumber(request):
     try:
         if badge_number < 0:
             # Auto assign
+            # FIXME Race condition
+            #with transaction.atomic():
             badges = Badge.objects.filter(event=badge.event)
             highest = badges.aggregate(Max('badgeNumber'))['badgeNumber__max']
             highest = highest + 1
@@ -1527,7 +1549,7 @@ def findUpgrade(request):
         lvl = badge.effectiveLevel()
         existingOIs = badge.getOrderItems()
         lvl_dict = {'basePrice': lvl.basePrice, 'options': getOptionsDict(existingOIs)}
-        context = {'attendee': attendee, 
+        context = {'attendee': attendee,
                    'badge': badge,
                    'event': event,
                    'jsonAttendee': json.dumps(attendee_dict, default=handler),
@@ -1592,7 +1614,7 @@ def invoiceUpgrade(request):
             orderItems = list(OrderItem.objects.filter(id__in=sessionItems))
             total = getTotal([], orderItems)
             context = {
-                'orderItems': orderItems, 
+                'orderItems': orderItems,
                 'total': total,
                 'attendee': attendee,
                 'prevLevel': lvl_dict,
@@ -1767,11 +1789,11 @@ def saveCart(cart):
 
     event = Event.objects.get(name=evt)
 
-    attendee = Attendee(firstName=pda['firstName'], lastName=pda['lastName'], 
+    attendee = Attendee(firstName=pda['firstName'], lastName=pda['lastName'],
                         phone=pda['phone'], email=pda['email'], birthdate=birthdate,
                         emailsOk=bool(pda['emailsOk']), volunteerContact=len(pda['volDepts']) > 0, volunteerDepts=pda['volDepts'],
                         surveyOk=bool(pda['surveyOk']), aslRequest=bool(pda['asl']))
-    
+
     if event.collectAddress:
         try:
             attendee.address1=pda['address1']
@@ -1888,13 +1910,14 @@ def cancelOrder(request):
     cartItems.delete()
     # Clear session values
     clear_session(request)
-    return success() 
+    return success()
 
 def clear_session(request):
     """
     Soft-clears session by removing any non-protected session values.
     (anything prefixed with '_'; keeps Django user logged-in)
     """
+    #FIXME: this still logs the Django user out.
     for key in list(request.session.keys()):
         if key[0] != '_':
             del request.session[key]
@@ -2028,7 +2051,7 @@ def basicBadges(request):
 
     bdata = [{'badgeName': badge.badgeName, 'level': badge.effectiveLevel().name, 'assoc':badge.abandoned,
               'firstName': badge.attendee.firstName.lower(), 'lastName': badge.attendee.lastName.lower(),
-              'printed': badge.printed, 'discount': badge.getDiscount(),
+              'printed': badge.printed, 'discount': badge.getDiscountCode(),
               'orderItems': getOptionsDict(badge.orderitem_set.all()) }
              for badge in badges if badge.effectiveLevel() != None and badge.event == event]
 
@@ -2063,6 +2086,8 @@ def vipBadges(request):
     vipLevels = [ level.name for level in priceLevels ]
 
     # FIXME list comprehension is sloooooooow - there must be a way to do this in SQL -R
+    # See https://docs.djangoproject.com/en/1.11/topics/db/queries/#backwards-related-objects
+    # For how to follow foreign keys in reverse.
     bdata = [{'badge': badge, 'orderItems': getOptionsDict(badge.orderitem_set.all()),
               'level': badge.effectiveLevel().name, 'assoc': badge.abandoned}
              for badge in badges if badge.effectiveLevel() != None and badge.effectiveLevel() != 'Unpaid' and
@@ -2184,7 +2209,7 @@ def getAccompaniedPriceLevels(request):
 
 def getFreePriceLevels(request):
     now = timezone.now()
-    levels = PriceLevel.objects.filter(public=False, startDate__lte=now, endDate__gte=now, name__icontains='free')
+    levels = PriceLevel.objects.filter(public=False, startDate__lte=now, endDate__gte=now, basePrice=0)
     data = getPriceLevelList(levels)
     return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder), content_type='application/json')
 
@@ -2285,7 +2310,7 @@ def getSessionAddresses(request):
                 cartItem.update({
                     'address1': pda['address1'],
                     'address2': pda['address2'],
-                    'city': pda['city'], 
+                    'city': pda['city'],
                     'state': pda['state'],
                     'postalCode': pda['postal'],
                     'country': pda['country']
@@ -2469,7 +2494,7 @@ def getRegistrationEmail(event=None):
     the first default event.  If no email is listed there, returns the
     default of APIS_DEFAULT_EMAIL in settings.py.
     """
-    if event is None: 
+    if event is None:
         try:
             event = Event.objects.get(default=True)
         except:
@@ -2485,7 +2510,7 @@ def getStaffEmail(event=None):
     the first default event.  If no email is listed there, returns the
     default of APIS_DEFAULT_EMAIL in settings.py.
     """
-    if event is None: 
+    if event is None:
         try:
             event = Event.objects.get(default=True)
         except:
@@ -2501,7 +2526,7 @@ def getDealerEmail(event=None):
     the first default event.  If no email is listed there, returns the
     default of APIS_DEFAULT_EMAIL in settings.py.
     """
-    if event is None: 
+    if event is None:
         try:
             event = Event.objects.get(default=True)
         except:

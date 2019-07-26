@@ -89,7 +89,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
 ]
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -129,10 +129,14 @@ WSGI_APPLICATION = 'fm_eventmanager.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE' : 'django.db.backends.sqlite3',
-        'NAME' : os.path.join(BASE_DIR, 'db.sqlite3'), 
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'apis_test',
+        'USER': 'postgres',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '',
         'TEST' : {
-            'NAME' : os.path.join(BASE_DIR, 'test-db.sqlite3'),
+            'NAME' : 'apis_test',
         }
     }
 }
@@ -192,6 +196,9 @@ SESSION_COOKIE_AGE = 60*60  # 1hr
 APIS_DEFAULT_EMAIL = "registration@example.com"
 APIS_DEALER_HEAD = "marketplace@example.com"
 APIS_STAFF_HEAD = "staff@example.com"
+
+# The age, in years, below which an attendee is considered a minor.
+APIS_LEGAL_AGE = 18
 
 # Authorize.net (deprecated) 
 AUTHNET_NAME = '426rwVfr3G47'
