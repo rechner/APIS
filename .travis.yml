@@ -35,11 +35,9 @@ install:
   - pip install coveralls
   - pip freeze
   - cp fm_eventmanager/settings.py.travis fm_eventmanager/settings.py
-before_script:
-  - psql -c 'CREATE DATABASE apis_test;' -U postgres
 script:
   - coverage run manage.py validate_templates
-  - coverage run manage.py test registration
+  - coverage run manage.py test --no-input registration
   - coverage report
 after_success:
   - coveralls
