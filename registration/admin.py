@@ -15,7 +15,6 @@ from django.urls import reverse
 from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
 from nested_inline.admin import NestedTabularInline, NestedModelAdmin
-import nested_admin
 
 from django.contrib import messages, auth
 from django.contrib.admin.models import LogEntry, DELETION
