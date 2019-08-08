@@ -629,7 +629,8 @@ class AttendeeOptionInline(NestedTabularInline, ForeignKeyAutocompleteStackedInl
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         field = super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-class OrderItemInline(NestedTabularInline, ForeignKeyAutocompleteStackedInline):
+class OrderItemInline(NestedTabularInline):
+    autocomplete_fields = ['order']
     model=OrderItem
     extra=0
     inlines = [AttendeeOptionInline]
@@ -641,6 +642,7 @@ class BadgeInline(NestedTabularInline):
     inlines = [OrderItemInline]
     list_display = ['event', 'badgeName', 'badgeNumber', 'registrationToken', 'registrationDate']
     readonly_fields = ['get_age_range', ]
+    search_fields = ['badgeName']
 
     def get_age_range(self, obj):
         born = obj.attendee.birthdate
@@ -657,6 +659,7 @@ class BadgeResource(resources.ModelResource):
         return badge.effectiveLevel()
 
     class Meta:
+        search_fields = ['badgeName']
         model = Badge
         fields = ('id', 'event__name', 'printed', 'badge_level', 'registeredDate',
                   'attendee__firstName', 'attendee__lastName', 'attendee__address1',
@@ -685,9 +688,7 @@ class PriceLevelFilter(admin.SimpleListFilter):
             return queryset.filter(orderitem__priceLevel__name=priceLevel)
 
 class BadgeAdmin(NestedModelAdmin, ImportExportModelAdmin, ForeignKeyAutocompleteAdmin):
-    list_per_page = 30
-    inlines = [OrderItemInline]
-    resource_class = BadgeResource
+    rngesource_class = BadgeResource
     save_on_top = True
     list_filter = ('event', 'printed', PriceLevelFilter)
     list_display = ('attendee', 'badgeName', 'badgeNumber', 'printed', 'paidTotal', 'effectiveLevel', 'abandoned',
@@ -796,6 +797,7 @@ def send_registration_email(modeladmin, request, queryset):
 send_registration_email.short_description = "Send registration email"
 
 class OrderAdmin(NestedModelAdmin):
+    search_fields = ['reference']
     list_display = ('reference', 'createdDate', 'total', 'orgDonation', 'charityDonation', 'discount', 'status')
     save_on_top = True
     inlines = [OrderItemInline]
@@ -874,6 +876,7 @@ admin.site.register(Cashdrawer, CashdrawerAdmin)
 
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ('order', 'badge', 'priceLevel', 'enteredBy')
+    autocomplete_fields = ['badge']
 
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_staff:

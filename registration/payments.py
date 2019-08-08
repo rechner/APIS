@@ -32,7 +32,8 @@ def chargePayment(order, ccData, ipAddress):
         amount = {'amount': convertedTotal, 'currency': settings.SQUARE_CURRENCY}
 
         billing_address = {
-            'postal_code' : ccData['card_data']['billing_postal_code'],
+            'postal_code'         : ccData['card_data']['billing_postal_code'],
+            'buyer_email_address' : ccData['email'],
         }
 
         try:
@@ -51,7 +52,8 @@ def chargePayment(order, ccData, ipAddress):
             'card_nonce': ccData["nonce"],
             'amount_money': amount,
             'reference_id': order.reference,
-            'billing_address': billing_address
+            'billing_address': billing_address,
+            'buyer_email_address' : ccData['email'],
         }
 
         logger.debug("---- Begin Transaction ----")
@@ -64,14 +66,13 @@ def chargePayment(order, ccData, ipAddress):
         logger.debug("---- Charge Submitted ----")
         logger.debug(api_response)
 
-        #try:
-        #import pdb; pdb.set_trace()
-        order.lastFour = api_response.transaction.tenders[0].card_details.card.last_4
-        order.apiData = json.dumps(api_response.to_dict())
-        order.notes = "Square: #" + api_response.transaction.id[:4]
-        #except Exception as e:
-        #    logger.debug(dir(api_response))
-        #    logger.exception(e)
+        # Save square response data:
+        try:
+            order.lastFour = api_response.transaction.tenders[0].card_details.card.last_4
+        except KeyError:
+            pass
+
+        order.jsonData = api_response.to_dict()
         order.save()
 
         if api_response.errors and len(api_response.errors) > 0:

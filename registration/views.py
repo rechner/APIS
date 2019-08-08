@@ -1046,25 +1046,25 @@ def addNewDealer(request):
 
 def onsite(request):
     event = Event.objects.get(default=True)
-    timezone.now()
-    context = {}
+    today = timezone.now()
+    context = {'event' : event}
+    # Render database field template to pass into "Agree to terms" checkbox:
+    templ = Template(event.attendeeCodeOfConduct)
+    context['agreement'] = templ.render(DjangoContext(dict(event=event)))
     if event.onlineRegStart <= today <= event.onlineRegEnd:
         return render(request, 'registration/onsite.html', context)
     return render(request, 'registration/closed.html', context)
 
 def onsiteCart(request):
-    sessionItems = request.session.get('order_items', [])
-    if not sessionItems:
-        context = {'orderItems': [], 'total': 0}
-        request.session.flush()
-    else:
-        orderItems = list(OrderItem.objects.filter(id__in=sessionItems))
-        total = getTotal([], orderItems)
-        context = {'orderItems': orderItems, 'total': total}
+    event = Event.objects.get(default=True)
+    context = {'event' : event}
+
     return render(request, 'registration/onsite-checkout.html', context)
 
 def onsiteDone(request):
-    context = {}
+    event = Event.objects.get(default=True)
+    context = {'event' : event}
+    clear_session(request)
     request.session.flush()
     return render(request, 'registration/onsite-done.html', context)
 
@@ -1385,9 +1385,9 @@ def assignBadgeNumber(request):
 
     if badge_name is not None:
         try:
-            badge = Badge.objects.filter(badgeName__icontains=badge_name, event__name=event.name).first()
+            badge = Badge.objects.filter(badgeName__icontains=badge_name, event=event).first()
         except:
-            return JsonResponse({'success' : False, 'reason' : 'Badge name search returned no results'})
+            return JsonResponse({'success' : False, 'reason' : 'Badge name search returned no results'}, status=404)
     else:
         if badge_id is None or badge_number is None:
             return JsonResponse({'success' : False, 'reason' : 'id and number are required parameters'}, status=400)
@@ -2193,12 +2193,6 @@ def getPriceLevelList(levels):
           } for level in levels ]
     return data
 
-def getMinorPriceLevels(request):
-    now = timezone.now()
-    levels = PriceLevel.objects.filter(public=False, startDate__lte=now, endDate__gte=now, name__icontains='minor').order_by('basePrice')
-    data = getPriceLevelList(levels)
-    return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder), content_type='application/json')
-
 def getAccompaniedPriceLevels(request):
     now = timezone.now()
     levels = PriceLevel.objects.filter(public=False, startDate__lte=now, endDate__gte=now, name__icontains='accompanied').order_by('basePrice')
@@ -2211,11 +2205,34 @@ def getFreePriceLevels(request):
     data = getPriceLevelList(levels)
     return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder), content_type='application/json')
 
+def getMinorPriceLevels(request):
+    pass
 
 def getPriceLevels(request):
+    age = request.GET.get('age', None)
+    public = request.GET.get('public', False)
+
     dealer = request.session.get('dealer_id', -1)
     staff = request.session.get('staff_id', -1)
     attendee = request.session.get('attendee_id', -1)
+    now = timezone.now()
+
+    if age is not None:
+        # Filter by specified age restrictions:
+        try:
+            age = int(age)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'age must be an integer'}, status=400)
+
+        levels = PriceLevel.objects.filter(
+                    Q(public=public, startDate__lte=now, endDate__gte=now,
+                      minAge__lte=age, maxAge__gte=age) |
+                    Q(public=public, startDate__lte=now, endDate__gte=now,
+                      minAge__lte=age, maxAge=None)).order_by('basePrice')
+
+    else:
+        levels = PriceLevel.objects.filter(public=public, startDate__lte=now, endDate__gte=now).order_by('basePrice')
+
     #hide any irrelevant price levels if something in session
     att = None
     if dealer > 0:
@@ -2232,8 +2249,6 @@ def getPriceLevels(request):
         att = Attendee.objects.get(id=attendee)
         badge = Badge.objects.filter(attendee=att).last()
 
-    now = timezone.now()
-    levels = PriceLevel.objects.filter(public=True, startDate__lte=now, endDate__gte=now).order_by('basePrice')
     if att and badge and badge.effectiveLevel():
         levels = levels.exclude(basePrice__lt=badge.effectiveLevel().basePrice)
     data = getPriceLevelList(levels)

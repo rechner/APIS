@@ -1,4 +1,6 @@
 {% extends "registration/master.html" %}
+{% load registration_tags %}
+{% load settings %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-modal/2.2.6/css/bootstrap-modal.min.css" />
@@ -36,132 +38,55 @@
   </div>
 </div>
 
-    <form class="form-horizontal" role="form" data-toggle="validator">
     <div class="tab-content">
     <div role="tabpanel" class="tab-pane fade in active" id="personal">
         <h1>{{ event }} Onsite Registration</h1>
         <p>Welcome to the registration system. To continue, enter your information below. Required fields are marked with a red asterisk (<span style="color:red;">*</span>).</p>
         <hr>
-
-
-                <div class="form-group">
-                    <label for="firstName" class="col-sm-3 control-label">Full (Legal) Name <span style="color:red;">*</span></label>
-                    <div class="col-sm-4">
-                        <input type="text" id="firstName" placeholder="First Name" class="form-control" autofocus required data-error="First name is required. ">
-                    </div>
-		    <div class="col-sm-5">
-                        <input type="text" id="lastName" placeholder="Last Name" class="form-control" required data-error="Last name is required.">
-                    </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
+	  <form class="form-horizontal" role="form" data-toggle="validator" id="info-form">
+            {% show_attendee_form event=event emailOptions=True %}
+            <div class="form-group">
+                <div class="col-sm-9 col-sm-offset-3">
+                    <a href="#registration" class="btn btn-primary col-sm-6 col-sm-offset-6 pull-right" aria-controls="registration" role="tab" id="next-personal" data-toggle="tab">Next &gt;&gt;</a>
                 </div>
-                <div class="form-group">
-                    <label for="email" class="col-sm-3 control-label">Email <span style="color:red;">*</span></label>
-                    <div class="col-sm-9">
-                        <input type="email" id="email" placeholder="Email" class="form-control" required data-error="Email is required.">
-                    </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-                </div>
-                <div class="form-group">
-                    <label class="col-sm-3">&nbsp;</label>
-                    <div class="col-sm-9">
-                        <label>
-                            <input type="checkbox" id="contact" checked="true"> <span class="control-label">Please keep me up to date with convention related information.</span>
-                        </label>
-                        <label>
-                            <input type="checkbox" id="survey" checked="true"> <span class="control-label">Please send me the post-con survey.</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="phone" class="col-sm-3 control-label">Phone Number <span style="color:red;">*</span></label>
-                    <div class="col-sm-9">
-                        <input type="tel" id="phone" placeholder="Phone Number" class="form-control" required pattern="^[0-9]{1,}$" data-minlength="10" maxlength=10 data-error="A 10-digit phone number is required. Please enter only numbers.">
-                    </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="add1" class="col-sm-3 control-label">Address <span style="color:red;">*</span></label>
-                    <div class="col-sm-9">
-                        <input type="text" name="add1" id="add1" placeholder="Address Line 1" class="form-control" required data-error="Address is required.">
-                    </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="add2" class="col-sm-3 control-label">&nbsp;</label>
-                    <div class="col-sm-9">
-                        <input type="text" name="add2" id="add2" placeholder="Address Line 2" class="form-control">
-                    </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="city" class="col-sm-3 control-label">City/State/ZIP <span style="color:red;">*</span></label>
-            <div class="col-sm-4">
-            <input type="text" name="city" id="city" placeholder="City" class="form-control" required data-error="City is required. ">
             </div>
-                    <div class="col-sm-2">
-            <select class="form-control bfh-states" id="state" data-country="US" data-state="PA" name="state"></select>
-                    </div>
-            <div class="col-sm-3">
-            <input type="text" name="zip" id="zip" placeholder="ZIP Code" class="form-control" data-minlength="5" data-error="Zip code is required.">
-            </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-                </div>
-                <div class="form-group">
-                    <label for="country" class="col-sm-3 control-label">Country <span style="color:red;">*</span></label>
-                    <div class="col-sm-9">
-            <select id="country" class="form-control bfh-countries" data-country="US" name="country"></select>
-                    </div>
-                </div>
 
-        <hr>
-
-                <div class="form-group">
-                    <label for="birthDate" class="col-sm-3 control-label">Date of Birth <span style="color:red;">*</span></label>
-                    <div class="col-sm-9">
-                        <input type="date" id="birthDate" class="form-control" placeholder="Select birthdate (YYYY-MM-DD)" required data-error="Date of birth is required.">
-            <p><small><button class="btn btn-link btn-sm" data-toggle="modal" data-target="#ageModal">Why do we need this?</button></small></p>
-                    </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-                </div>
-                <div class="form-group">
-                    <div class="col-sm-9 col-sm-offset-3">
-			<a href="#registration" class="btn btn-primary col-sm-6 col-sm-offset-6 pull-right" aria-controls="registration" role="tab" data-toggle="tab" id="next-personal">Next >></a>
-                    </div>
-                </div>
-
+	  {% csrf_token %}
+	  </form>
     </div>
     <div role="tabpanel" class="tab-pane fade" id="registration">
-        <h2>Registration Info</h2>
-        <p>Select your registration options and level.</p>
-        <hr>
-                <div class="form-group">
-                    <label for="firstName" class="col-sm-3 control-label">Badge Name <span style="color:red;">*</span></label>
-                    <div class="col-sm-9">
-                        <input type="text" id="badgeName" name="badgeName" placeholder="Your Name Here.." class="form-control form-control-text" maxlength="25" required>
-                    </div>
-            <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-                </div>
-
-		<div class="row" id="levelContainer"></div>
-		<br/>
-		<hr/>
-             <div>
-                    <div>
-                        <label>
-                            <input type="checkbox" id="agreeToRules" name="agreeToRules" class="form-control-checkbox" required>
-			    {{ agreement | safe }}
-                        </label>
-                    </div>
-		    <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
-		</div>
-		<div>
-            <a href="#personal" class="btn btn-primary col-sm-6" aria-controls="personal" role="tab" data-toggle="tab" id="back-registration"><< Back</a>
-       	    <button type="submit" class="btn btn-primary col-sm-6 pull-right" id="register">Register</button>
+      <h2>Registration Info</h2>
+      <p>Select your registration options and level.</p>
+      <hr>
+      <form class="form-horizontal" role="form" id="level-form" data-toggle="validator">
+        <div class="form-group">
+          <label for="badgeName" class="col-sm-3 control-label">Badge Name <span style="color:red;">*</span></label>
+          <div class="col-sm-9">
+            <input type="text" id="badgeName" name="badgeName" placeholder="Your Name Here.." class="form-control form-control-text" maxlength="25" required>
+          </div>
+          <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
         </div>
-	</div>
-	</div>
-	{% csrf_token %}
-	</form>
+        <input style="display: none" name="level_validation" id="level_validation" required>
+
+        <div class="row" id="levelContainer"></div>
+        <br/>
+        <hr/>
+        <div>
+          <div>
+            <label>
+            <input type="checkbox" id="agreeToRules" name="agreeToRules" class="form-control-checkbox" required>
+              {{ agreement | safe }}
+            </label>
+          </div>
+
+          <div class="col-sm-offset-3 help-block with-errors"style=" padding-left:15px;"></div>
+        </div>
+        <div>
+          <a href="#personal" class="btn btn-primary col-sm-6" aria-controls="personal" role="tab" data-toggle="tab" id="back-registration">&lt;&lt; Back</a>
+          <button type="submit" class="btn btn-primary col-sm-6 pull-right" id="register">Register</button>
+        </div>
+      </form>
+    </div>
 
 {% endblock %}
 
@@ -253,74 +178,10 @@
 
  <script type="text/javascript">
     var levelTemplateData = [];
-    var minorLevelTemplateData = [];
-    var accompaniedLevelTemplateData = [];
-    var freeLevelTemplateData = [];
     var levelData = [];
-    var minorLevelData = [];
-    var accompaniedLevelData = [];
-    var freeLevelData = [];
     var deptData = [];
     var shirtSizes = [];
     $( "body" ).ready(function() {
-        // only init the javascript datepicker if none is provided by the browser natively
-        if (!Modernizr.inputtypes.date) {
-            $("#birthDate").datepicker({
-                format: 'yyyy-mm-dd',
-                changeMonth: true,
-                changeYear: true
-            });
-        }
-        $.getJSON("{% url 'pricelevels' %}", function(data) {
-            levelData = data;
-            $.each( data, function( key, val ) {
-                levelTemplateData.push({
-                    name: val.name,
-                    price: "$" + val.base_price,
-                    levelId: "level_" + val.id,
-                    selectText: "Select " + val.name
-                });
-            });
-            $("#levelContainer").loadTemplate($("#levelTemplate"), levelTemplateData);
-            $(".changeLevel").hide();
-
-        });
-        $.getJSON("{% url 'minorpricelevels' %}", function(data) {
-            minorLevelData = data;
-            $.each( data, function( key, val ) {
-                minorLevelTemplateData.push({
-                    name: val.name,
-                    price: "$" + val.base_price,
-                    levelId: "level_" + val.id,
-                    selectText: "Select " + val.name
-                });
-            });
-
-        });
-        $.getJSON("{% url 'accompaniedpricelevels' %}", function(data) {
-            accompaniedLevelData = data;
-            $.each( data, function( key, val ) {
-                accompaniedLevelTemplateData.push({
-                    name: val.name,
-                    price: "$" + val.base_price,
-                    levelId: "level_" + val.id,
-                    selectText: "Select " + val.name
-                });
-            });
-
-        });
-        $.getJSON("{% url 'freepricelevels' %}", function(data) {
-            freeLevelData = data;
-            $.each( data, function( key, val ) {
-                freeLevelTemplateData.push({
-                    name: val.name,
-                    price: "$" + val.base_price,
-                    levelId: "level_" + val.id,
-                    selectText: "Select " + val.name
-                });
-            });
-
-        });
         $.getJSON("{% url 'departments' %}", function(data) {
             deptData = data;
             $.each(data, function(key, val) {
@@ -337,6 +198,28 @@
         window.scrollTo(0, 0);
     });
 
+    var load_levels = function (age) {
+        return $.getJSON("{% url 'pricelevels' %}",
+          {
+            age: age,
+            public: 1
+          },
+          function(data) {
+            levelData = data;
+            levelTemplateData = [];
+            $.each( data, function( key, val ) {
+                levelTemplateData.push({
+                    name: val.name,
+                    price: "$" + val.base_price,
+                    levelId: "level_" + val.id,
+                    selectText: "Select " + val.name
+                });
+            });
+            $("#levelContainer").loadTemplate($("#levelTemplate"), levelTemplateData);
+            $(".changeLevel").hide();
+        });
+    };
+
     $("#levelContainer").on('click', 'a.selectLevel', function(){
         clearLevels();
         var levelId = $(this).attr('id').split('_')[1];
@@ -347,67 +230,56 @@
                 $("#levelContainer").loadTemplate($("#levelTemplate"), val);
                 $(".changeLevel").show();
                 $(".selectLevel").text("Selected!");
-                generateOptions(id);
-                return false;
-            }
-        });
-        $.each( minorLevelTemplateData, function( key, val ) {
-            var id = val.levelId.split('_')[1];
-            if (id == levelId){
-                $("#regLevel").val(val.name);
-                $("#levelContainer").loadTemplate($("#levelTemplate"), val);
-                $(".changeLevel").show();
-                $(".selectLevel").text("Selected!");
-                generateOptions(id);
-                return false;
-            }
-        });
-        $.each( accompaniedLevelTemplateData, function( key, val ) {
-            var id = val.levelId.split('_')[1];
-            if (id == levelId){
-                $("#regLevel").val(val.name);
-                $("#levelContainer").loadTemplate($("#levelTemplate"), val);
-                $(".changeLevel").show();
-                $(".selectLevel").text("Selected!");
-                generateOptions(id);
-                return false;
-            }
-        });
-        $.each( freeLevelTemplateData, function( key, val ) {
-            var id = val.levelId.split('_')[1];
-            if (id == levelId){
-                $("#regLevel").val(val.name);
-                $("#levelContainer").loadTemplate($("#levelTemplate"), val);
-                $(".changeLevel").show();
-                $(".selectLevel").text("Selected!");
+                $("#level_validation").val(val.levelId);
                 generateOptions(id);
                 return false;
             }
         });
     });
 
-    $("body").on("click", '#next-personal', function() {
-        if (Modernizr.inputtypes.date) {
-            // native datepicker - expect ISO date
-            var birthdate = parseDate($("#birthDate").val());
-        } else {
-            // American middle-endian format put out by datepicker javascript
-            var birthdate = new Date(Date.parse($("#birthDate").val()));
+    $("body").on("click", '#next-personal', function(e) {
+        $("#info-form").validator('validate');
+        if ($("#birthMonth").val() == null) {
+            $("#birthMonth").parent().parent().addClass("has-error has-danger");
+            $("#birthMonth").parent().siblings(".help-block").html("Select a month");
+            return false;
         }
-        var age = getAge(birthdate);
+        $("#birthMonth").removeClass("has-error has-danger");
+
+        if ($(".has-error").length != 0) {
+            e.preventDefault();
+            return false;
+        }
+
+        var startdate = new Date("{{ event.startDate.isoformat }}");
+        var birthdate = getBirthdate();
+        var age = getAge(birthdate, startdate);
 
         if (age < 0) {
-            $("#levelContainer").loadTemplate($("#levelTemplate"), freeLevelTemplateData);
-            $(".changeLevel").hide();
+          $("#birthMonth").parent().parent().addClass("has-error has-danger");
+          $("#birthMonth").parent().siblings(".help-block").html("You must be born after the event start date.");
+          e.preventDefault();
+          return false;
+        }
 
-        } else if (age < 13) {
-            $("#levelContainer").loadTemplate($("#levelTemplate"), accompaniedLevelTemplateData);
-            $(".changeLevel").hide();
+        load_levels(age).success(function () {
+        }).error(function (e) {
+          alert("An error occurred while trying to fetch price levels: " + e);
+        }).then(function (e) {
+          if (levelData.length == 0) {
+            $("#level_validation").val("");
+            $("#levelContainer").html('<div class="alert alert-danger">No price levels are available for your age group: ' + age + '.</div>');
+          }
+        });
 
-        } else if (age < 18) {
+
+        /*} else if (age < {% settings_value 'APIS_LEGAL_AGE' %}) {
             $("#levelContainer").loadTemplate($("#levelTemplate"), minorLevelTemplateData);
             $(".changeLevel").hide();
-        }
+        }*/
+
+        // Show the level selection tab:
+        $("#registration").tab('show');
 
     });
 
@@ -415,6 +287,7 @@
     $("#levelContainer").on('click', 'a.changeLevel', function() {
         $("#levelContainer").loadTemplate($("#levelTemplate"), levelTemplateData);
         $("#regLevel").val("");
+        $("#level_validation").val("");
         $(".changeLevel").hide();
     });
 
@@ -422,6 +295,7 @@
         $.each( levelTemplateData, function( key, val ) {
             $("#"+val.levelId).text("Select " + val.name);
         });
+        $("#level_validation").val("");
         $("form").validator('update');
     };
 
@@ -518,21 +392,14 @@
     };
 
     $("#register").click(function(e) {
-        e.preventDefault();
         $("form").validator('validate');
         var errorCount = $(".has-error").length;
-        if (errorCount > 0) {return;}
-        if ($("#birthDate").val() == "") {
-            alert("You must enter your birthdate to submit your registration.");
-            return;
+        if (errorCount > 0) {
+          e.preventDefault();
+          return false;
         }
-        if (Modernizr.inputtypes.date) {
-            // native datepicker - expect ISO date
-            var birthdate = parseDate($("#birthDate").val());
-        } else {
-            // American middle-endian format put out by datepicker javascript
-            var birthdate = new Date(Date.parse($("#birthDate").val()));
-        }
+
+        var birthdate = getBirthdate();
         var data = {
             'attendee': {
                 'firstName': $("#firstName").val(), 'lastName': $("#lastName").val(),

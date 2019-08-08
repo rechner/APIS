@@ -1,6 +1,7 @@
 {% extends "registration/master.html" %}
 
 {% load registration_tags %}
+{% load settings %}
 
 {% block content %}
 <div class="modal fade" id="ageModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -24,6 +25,23 @@
     </div>
   </div>
 </div>
+<!-- Modal -->
+<div class="modal fade" id="codeOfConduct" tabindex="-1" role="dialog" aria-labelledby="codeOfConduct">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <iframe src="{{ event.codeOfConduct }}" style="width: 100%; height: 600px"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
     <form class="form-horizontal" role="form" data-toggle="validator">
     <div class="tab-content">
@@ -379,9 +397,11 @@
         }
 
       {% if not event.allowOnlineMinorReg %}
-        var age = getAge(birthdate);
-        if (age < 18) {
-            alert("You must be 18 by the first day of {{event}} to register online.")
+        var startdate = new Date("{{ event.startDate.isoformat }}");
+        // var birthdate = getBirthdate();
+        var age = getAge(birthdate, startdate);
+        if (age < {% settings_value 'APIS_LEGAL_AGE' %}) {
+            alert("You must be {% settings_value 'APIS_LEGAL_AGE' %} by the first day of {{event}} to register online.")
             return;
         }
       {% endif %}

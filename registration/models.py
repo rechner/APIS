@@ -382,8 +382,6 @@ class Attendee(models.Model):
         verbose_name="ASL services requested")
 
     def __str__(self):
-        if self is None:
-            return u"--"
         return u"{0} {1}".format(self.firstName, self.lastName)
 
 class Badge(models.Model):

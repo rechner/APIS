@@ -19,3 +19,17 @@ function parseDate(input) {
 function setTwoNumberDecimal(e) {
     this.value = parseFloat(this.value).toFixed(2);
 }
+
+function leftPad(value, length) {
+    return ('0'.repeat(length) + value).slice(-length);
+}
+
+function getBirthdate() {
+    var month = parseInt($("#birthMonth").val()) - 1;
+    var day = $("#birthDay").val();
+    var year = $("#birthYear").val();
+
+    var birthdate = new Date(year, month, day);
+    return birthdate;
+}
+
