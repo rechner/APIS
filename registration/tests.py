@@ -258,6 +258,25 @@ class OrdersTestCases(TestCase):
             "surveyOk": "false",
         }
 
+        self.upgrade_attendee_1 = Attendee(*self.attendee_regular_1)
+        self.upgrade_attendee_1.save()
+        self.upgrade_badge_1 = Badge(
+            attendee=self.upgrade_attendee_1, event=self.event, badgeName="Upgrade Me",
+        )
+        self.upgrade_badge_1.save()
+        self.upgrade_order = Order(
+            total=self.price_45.basePrice,
+            status="Completed",
+            reference="ABCDEFG",
+            lastFour="1111",
+        )
+        self.upgrade_order_1.save()
+        self.upgrade_order_item_1 = OrderItem(
+            order=self.upgrade_order,
+            badge=self.upgrade_badge_1,
+            priceLevel=self.price_45,
+        )
+
         self.client = Client()
 
     def test_get_prices(self):
@@ -548,6 +567,43 @@ class OrdersTestCases(TestCase):
 
         discount = Discount.objects.get(codeName="StaffDiscount")
         self.assertEqual(discount.used, discountUsed + 1)
+
+    def test_upgrade_find_wrong_email(self):
+        # Failed lookup
+        badge = self.upgrade_badge_1
+        postData = {
+            "email": "nottherightemail@somewhere.com",
+            "token": badge.registrationToken,
+            "event": self.event.name,
+        }
+        response = self.client.post(
+            reverse("findUpgrade"),
+            json.dumps(postData),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.content, "No Record Found")
+
+    def test_upgrade_find_happy_path(self):
+        badge = self.upgrade_badge_1
+        postData = {
+            "event": self.event.name,
+            "email": badge.attendee.email,
+            "token": badge.registrationToken,
+        }
+        response = self.client.post(
+            reverse("findStaff"), json.dumps(postData), content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_upgrade(self):
+        # find existing registration
+        badge = Badge.objects.get(id=1)
+        self.assertEqual(badge.effectiveLevel(), self.price_45)
+
+        # infoUpgrade()
+        # findUpgrade()
+        pass
 
     def test_new_staff(self):
         pass

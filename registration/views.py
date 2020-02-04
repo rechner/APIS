@@ -57,7 +57,7 @@ def index(request):
 
 
 def flush(request):
-    request.session.flush()
+    clear_session(request)
     return JsonResponse({"success": True})
 
 
@@ -244,10 +244,11 @@ def getTotal(cartItems, orderItems, disc=""):
         itemSubTotal = item.priceLevel.basePrice
         effLevel = item.badge.effectiveLevel()
         # FIXME Why was this here?
-        # if effLevel:
-        #    itemTotal = itemSubTotal - effLevel.basePrice
-        # else:
-        itemTotal = itemSubTotal
+
+        if effLevel:
+            itemTotal = itemSubTotal - effLevel.basePrice
+        else:
+            itemTotal = itemSubTotal
 
         itemTotal += getOrderItemOptionTotal(item.attendeeoptions_set.all())
 
@@ -646,7 +647,7 @@ def checkoutStaff(request):
         if not status:
             return JsonResponse({"success": False, "message": message})
 
-        request.session.flush()
+        clear_session(request)
         try:
             emails.sendStaffRegistrationEmail(order.id)
         except Exception as e:
@@ -822,12 +823,12 @@ def invoiceDealer(request):
     sessionDiscount = request.session.get("discount", "")
     if not sessionItems:
         context = {"orderItems": [], "total": 0, "discount": {}}
-        request.session.flush()
+        clear_session(request)
     else:
         dealerId = request.session.get("dealer_id", -1)
         if dealerId == -1:
             context = {"orderItems": [], "total": 0, "discount": {}}
-            request.session.flush()
+            clear_session(request)
         else:
             dealer = Dealer.objects.get(id=dealerId)
             orderItems = list(OrderItem.objects.filter(id__in=sessionItems))
@@ -918,7 +919,7 @@ def checkoutAsstDealer(request):
     status, message, order = doCheckout(pbill, total, None, [], [orderItem], 0, 0)
 
     if status:
-        request.session.flush()
+        clear_session(request)
         try:
             emails.sendDealerAsstEmail(dealer.id)
         except Exception as e:
@@ -1061,7 +1062,7 @@ def checkoutDealer(request):
             if not status:
                 return JsonResponse({"success": False, "message": message})
 
-            request.session.flush()
+            clear_session(request)
 
             try:
                 emails.sendDealerPaymentEmail(dealer, order)
@@ -1094,7 +1095,7 @@ def checkoutDealer(request):
         )
 
         if status:
-            request.session.flush()
+            clear_session(request)
             try:
                 dealer.resetToken()
                 emails.sendDealerPaymentEmail(dealer, order)
@@ -1236,7 +1237,7 @@ def onsiteCart(request):
 
     if not cartItems:
         context = {"orderItems": [], "total": 0}
-        request.session.flush()
+        clear_session(request)
     else:
         cartItems = list(Cart.objects.filter(id__in=sessionItems))
         orderItems = []
@@ -1311,7 +1312,7 @@ def onsiteCart(request):
 
 def onsiteDone(request):
     context = {}
-    request.session.flush()
+    clear_session(request)
     return render(request, "registration/onsite-done.html", context)
 
 
@@ -1935,13 +1936,13 @@ def invoiceUpgrade(request):
     sessionItems = request.session.get("order_items", [])
     if not sessionItems:
         context = {"orderItems": [], "total": 0, "discount": {}}
-        request.session.flush()
+        clear_session(request)
     else:
         attendeeId = request.session.get("attendee_id", -1)
         badgeId = request.session.get("badge_id", -1)
         if attendeeId == -1 or badgeId == -1:
             context = {"orderItems": [], "total": 0, "discount": {}}
-            request.session.flush()
+            clear_session(request)
         else:
             badge = Badge.objects.get(id=badgeId)
             attendee = Attendee.objects.get(id=attendeeId)
@@ -1953,7 +1954,6 @@ def invoiceUpgrade(request):
                 "orderItems": orderItems,
                 "total": total,
                 "total_discount": total_discount,
-                "grand_total": total - lvl_dict["basePrice"],
                 "attendee": attendee,
                 "prevLevel": lvl_dict,
                 "event": badge.event,
@@ -1991,7 +1991,7 @@ def checkoutUpgrade(request):
             if not status:
                 return JsonResponse({"success": False, "message": message})
 
-            request.session.flush()
+            clear_session(request)
             try:
                 emails.sendUpgradePaymentEmail(attendee, order)
             except Exception as e:
@@ -2017,13 +2017,12 @@ def checkoutUpgrade(request):
         total = subtotal + porg + pcharity
 
         pbill = postData["billingData"]
-        ip = get_client_ip(request)
         status, message, order = doCheckout(
             pbill, total, None, [], orderItems, porg, pcharity
         )
 
         if status:
-            request.session.flush()
+            clear_session(request)
             try:
                 emails.sendUpgradePaymentEmail(attendee, order)
             except Exception as e:
@@ -2054,7 +2053,7 @@ def getCart(request):
     event = None
     if not sessionItems and not sessionOrderItems:
         context = {"orderItems": [], "total": 0, "discount": {}}
-        request.session.flush()
+        clear_session(request)
     elif sessionOrderItems:
         orderItems = list(OrderItem.objects.filter(id__in=sessionOrderItems))
         if discount:
@@ -2346,7 +2345,7 @@ def checkout(request):
         if not status:
             return abort(400, message)
 
-        request.session.flush()
+        clear_session(request)
         try:
             emails.sendRegistrationEmail(order, order.billingEmail)
         except Exception as e:

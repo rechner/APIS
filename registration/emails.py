@@ -77,31 +77,36 @@ def sendRegistrationEmail(order, email):
 
 
 def sendUpgradePaymentEmail(attendee, order):
-    orderItems = OrderItem.objects.filter(order=order)
-    msgTxt = render_to_string("registration/emails/upgrade.txt", data)
-    msgHtml = render_to_string("registration/emails/upgrade.html", data)
     event = Event.objects.get(default=True)
-    registrationEmail = views.getRegistraionEmail(event)
-    data = {"reference": order.reference, "event": event}
+    order_items = OrderItem.objects.filter(order=order)
+    data = {
+        "event": event,
+        "reference": order.reference,
+    }
+    msg_txt = render_to_string("registration/emails/upgrade.txt", data)
+    msg_html = render_to_string("registration/emails/upgrade.html", data)
+    registration_email = views.getRegistraionEmail(event)
     sendEmail(
-        registrationEmail,
+        registration_email,
         [attendee.email],
         "{0} Upgrade Payment".format(event.name),
-        msgTxt,
-        msgHtml,
+        msg_txt,
+        msg_html,
     )
 
-    for oi in orderItems:
+    for oi in order_items:
         if oi.priceLevel.emailVIP:
             data = {"badge": oi.badge, "event": event}
-            msgTxt = render_to_string("registration/emails/vipNotification.txt", data)
-            msgHtml = render_to_string("registration/emails/vipNotification.html", data)
+            msg_txt = render_to_string("registration/emails/vipNotification.txt", data)
+            msg_html = render_to_string(
+                "registration/emails/vipNotification.html", data
+            )
             sendEmail(
-                registrationEmail,
+                registration_email,
                 [email for email in oi.priceLevel.emailVIPEmails.split(",")],
                 "{0} VIP Registration".format(event.name),
-                msgTxt,
-                msgHtml,
+                msg_txt,
+                msg_html,
             )
 
 
