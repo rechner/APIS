@@ -131,6 +131,16 @@ class CronReporterABC:
     def write(self, event, topic, value):
         pass
 
+    @abstractmethod
+    def latest(self, event, topic):
+        pass
+
+    @staticmethod
+    def get_fields(value):
+        if type(value) is dict:
+            return value
+        return ({"count": value,},)
+
 
 class DummyReporter(CronReporterABC):
     def __init__(self, config):
@@ -138,6 +148,9 @@ class DummyReporter(CronReporterABC):
 
     def write(self, event, topic, value, **kwargs):
         pass
+
+    def latest(self, event, topic):
+        raise NotImplementedError
 
 
 CronReporterABC.register(DummyReporter)
@@ -167,9 +180,9 @@ class InfluxDBReporter(CronReporterABC):
         """
         Stage a data point to record to be committed to the database in bulk
 
-        :param event:
-        :param topic:
-        :param value:
+        :param event: String representing the event name
+        :param topic: Topic to publish the measurement to (measurement name)
+        :param value: Value for the measurement, or a dictionary of measurements
         :return:
         """
         tags = {
@@ -177,11 +190,14 @@ class InfluxDBReporter(CronReporterABC):
             "site": Site.objects.get_current().domain,
         }
         tags.update(kwargs)
+
+        fields = self.get_fields(value)
+
         document = {
             "measurement": topic,
             "tags": tags,
             "time": self.timestamp(),
-            "fields": {"count": value,},
+            "fields": fields,
         }
         self.json_body.append(document)
 
@@ -195,16 +211,30 @@ class InfluxDBReporter(CronReporterABC):
             "site": Site.objects.get_current().domain,
         }
         tags.update(kwargs)
+
+        fields = self.get_fields(value)
+
         json_body = [
             {
                 "measurement": topic,
                 "tags": {"event": event, "site": Site.objects.get_current().domain,},
                 "time": self.timestamp(),
-                "fields": {"count": value,},
+                "fields": fields,
             }
         ]
 
         self.client.write_points(json_body)
+
+    def latest(self, event, topic):
+        query = "SELECT last(*) FROM $topic WHERE event = $event AND site = $site"
+        site = Site.objects.get_current().domain
+        params = {
+            "topic": topic,
+            "event": event,
+            "site": site,
+        }
+
+        self.client.query_where(query, bind_params=params)
 
 
 CronReporterABC.register(InfluxDBReporter)
